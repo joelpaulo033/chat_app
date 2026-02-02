@@ -1,90 +1,75 @@
+import 'package:chat_app/components/my_drawer.dart';
 import 'package:chat_app/pages/chat_page.dart';
 import 'package:chat_app/services/auth/auth_service.dart';
 import 'package:chat_app/components/user_tile.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class HomePage extends StatelessWidget {
+  HomePage({super.key});
 
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  // instance of auth
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-
-  // sign user out
-  void signOut() {
-    // get auth service
-    final authService = Provider.of<AuthService>(context, listen: false);
-    authService.signOut();
-  }
+  // chat & auth service
+  final AuthService _authService = AuthService();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
-        title: const Text('Home Page'),
-        actions: [
-          // sign out button
-          IconButton(
-            onPressed: signOut,
-            icon: const Icon(Icons.logout),
-          )
-        ],
+        title: const Text("Home"),
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.grey,
+        elevation: 0,
       ),
+      drawer: const MyDrawer(),
       body: _buildUserList(),
     );
   }
 
   // build a list of users except for the current logged in user
   Widget _buildUserList() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('users').snapshots(),
+    return StreamBuilder(
+      stream: _authService.getUsersStream(),
       builder: (context, snapshot) {
+        // error
         if (snapshot.hasError) {
-          return const Text('error');
+          return const Text("Error");
         }
 
+        // loading
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Text('loading...');
+          return const Text("Loading..");
         }
 
+        // return list view
         return ListView(
-          children: snapshot.data!.docs
-              .map<Widget>((doc) => _buildUserListItem(doc))
+          children: snapshot.data!
+              .where((userData) => userData['email'] != _authService.getCurrentUser()!.email)
+              .map<Widget>((userData) => _buildUserListItem(userData, context))
               .toList(),
         );
       },
     );
   }
 
-  // build individual user list items
-  Widget _buildUserListItem(DocumentSnapshot document) {
-    Map<String, dynamic> data = document.data()! as Map<String, dynamic>;
-
-    // display all users except current user
-    if (_auth.currentUser!.email != data['email']) {
-      return UserTile(
-        text: data['email'],
-        onTap: () {
-          // pass the clicked user's UID to the chat page
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ChatPage(
-                receiverUserEmail: data['email'],
-                receiverUserID: data['uid'],
-              ),
+  // build individual user list tile for user
+  Widget _buildUserListItem(
+      Map<String, dynamic> userData, BuildContext context) {
+    return UserTile(
+      text: userData['displayName'] ?? userData['email'],
+      profilePhotoUrl: userData['profilePhotoUrl'],
+      onTap: () {
+        // tapped on a user -> go to chat page
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatPage(
+              receiverEmail: userData['email'],
+              receiverID: userData['uid'],
+              receiverDisplayName: userData['displayName'] ?? userData['email'],
             ),
-          );
-        },
-      );
-    }
-    return Container();
+          ),
+        );
+      },
+    );
   }
 }

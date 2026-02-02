@@ -1,3 +1,4 @@
+import 'package:chat_app/pages/home_page.dart';
 import 'package:chat_app/services/auth/auth_service.dart';
 import 'package:chat_app/components/my_button.dart';
 import 'package:chat_app/components/my_textfield.dart';
@@ -26,6 +27,12 @@ class _LoginPageState extends State<LoginPage> {
       await authService.signInWithEmailandPassword(
         emailController.text,
         passwordController.text,
+      );
+
+      // navigate to home page
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomePage()),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

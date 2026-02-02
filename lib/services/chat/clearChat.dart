@@ -5,51 +5,35 @@ class ChatService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Generate consistent chatId for two users
-  String getChatId(String senderID, String receiverID) {
-    return senderID.compareTo(receiverID) > 0
-        ? '$receiverID-$senderID'
-        : '$senderID-$receiverID';
-  }
-
   // Send a message
   Future<void> sendMessage(String receiverID, String message) async {
     final senderID = _auth.currentUser!.uid;
-    final chatId = getChatId(senderID, receiverID);
-
-    // Add message to subcollection 'messages'
-    await _firestore
-        .collection('chats')
-        .doc(chatId)
-        .collection('messages')
-        .add({
+    await _firestore.collection('chats').add({
       'senderId': senderID,
+      'receiverId': receiverID,
       'message': message,
       'timestamp': FieldValue.serverTimestamp(),
     });
   }
 
-  // Get messages between two users
+  // Get messages between current user and receiver
   Stream<QuerySnapshot> getMessages(String receiverID, String senderID) {
-    final chatId = getChatId(senderID, receiverID);
-
     return _firestore
         .collection('chats')
-        .doc(chatId)
-        .collection('messages')
-        .orderBy('timestamp', descending: false)
+        .where('senderId', whereIn: [senderID, receiverID])
+        .where('receiverId', whereIn: [senderID, receiverID])
+        .orderBy('timestamp', descending: false) // new messages at bottom
         .snapshots();
   }
 
-  // Clear all messages between two users
+  // Clear all chat messages between current user and receiver
   Future<void> clearChat(String receiverID) async {
     final senderID = _auth.currentUser!.uid;
-    final chatId = getChatId(senderID, receiverID);
 
     final query = await _firestore
         .collection('chats')
-        .doc(chatId)
-        .collection('messages')
+        .where('senderId', whereIn: [senderID, receiverID])
+        .where('receiverId', whereIn: [senderID, receiverID])
         .get();
 
     for (var doc in query.docs) {

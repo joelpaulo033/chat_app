@@ -1,18 +1,22 @@
 import 'package:chat_app/components/chat_bubble.dart';
 import 'package:chat_app/components/my_textfield.dart';
+import 'package:chat_app/services/auth/auth_service.dart';
 import 'package:chat_app/services/chat/chat_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class ChatPage extends StatefulWidget {
-  final String receiverUserEmail;
-  final String receiverUserID;
+  final String receiverEmail;
+  final String receiverID;
+  final String? receiverDisplayName; // make nullable
 
-  const ChatPage(
-      {super.key,
-      required this.receiverUserEmail,
-      required this.receiverUserID});
+  const ChatPage({
+    super.key,
+    required this.receiverEmail,
+    required this.receiverID,
+    this.receiverDisplayName,
+  });
 
   @override
   State<ChatPage> createState() => _ChatPageState();
@@ -20,112 +24,235 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   final ChatService _chatService = ChatService();
-  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final AuthService _authService = AuthService();
 
-  void sendMessage() async {
-    if (_messageController.text.isNotEmpty) {
-      await _chatService.sendMessage(
-          widget.receiverUserID, _messageController.text);
-      _messageController.clear();
+  String get displayName =>
+      (widget.receiverDisplayName?.trim().isEmpty ?? true)
+          ? widget.receiverEmail
+          : widget.receiverDisplayName!;
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.receiverUserEmail)),
+      backgroundColor: const Color(0xFFF4F6F8),
+      appBar: _buildChatAppBar(),
       body: Column(
         children: [
-          Expanded(
-            child: _buildMessageList(),
-          ),
+          Expanded(child: _buildMessageList()),
           _buildMessageInput(),
-          const SizedBox(height: 25),
         ],
       ),
     );
   }
 
-  // build message list
+  // ---------------- APP BAR ----------------
+  PreferredSizeWidget _buildChatAppBar() {
+    return AppBar(
+      elevation: 1,
+      backgroundColor: Colors.white,
+      foregroundColor: Colors.black,
+      titleSpacing: 0,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.delete_outline),
+          onPressed: _confirmClearChat,
+        ),
+      ],
+      title: Row(
+        children: [
+          const SizedBox(width: 8),
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: Colors.blueGrey.shade200,
+            child: Text(
+              displayName[0].toUpperCase(),
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            displayName,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------- MESSAGE LIST ----------------
   Widget _buildMessageList() {
-    return StreamBuilder(
-      stream: _chatService.getMessages(
-          widget.receiverUserID, _firebaseAuth.currentUser!.uid),
+    final senderID = _authService.getCurrentUser()!.uid;
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: _chatService.getMessages(widget.receiverID, senderID),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Text('Error${snapshot.error}');
+          return const Center(child: Text("Failed to load messages"));
         }
 
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Text('Loading..');
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
         }
 
-        return ListView(
-          children: snapshot.data!.docs
-              .map((document) => _buildMessageItem(document))
-              .toList(),
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+
+        final docs = snapshot.data!.docs;
+
+        if (docs.isEmpty) {
+          return const Center(
+            child: Text(
+              "No messages yet. Start the conversation!",
+              style: TextStyle(color: Colors.grey),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          controller: _scrollController,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          itemCount: docs.length,
+          itemBuilder: (context, index) {
+            return _buildMessageItem(docs[index]);
+          },
         );
       },
     );
   }
 
-  // build message item
-  Widget _buildMessageItem(DocumentSnapshot document) {
-    Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+  // ---------------- MESSAGE ITEM ----------------
+  Widget _buildMessageItem(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    final bool isCurrentUser =
+        data['senderId'] == _authService.getCurrentUser()!.uid;
 
-    // align the messages to the right if the sender is the current user, otherwise to the left
-    var alignment = (data['senderId'] == _firebaseAuth.currentUser!.uid)
-        ? Alignment.centerRight
-        : Alignment.centerLeft;
+    final timestamp = data['timestamp'] as Timestamp?;
+    final timeText = timestamp != null
+        ? DateFormat('h:mm a').format(timestamp.toDate())
+        : '';
 
-    return Container(
-      alignment: alignment,
+    return Align(
+      alignment: isCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.symmetric(vertical: 4),
         child: Column(
-          crossAxisAlignment: (data['senderId'] == _firebaseAuth.currentUser!.uid)
-              ? CrossAxisAlignment.end
-              : CrossAxisAlignment.start,
-          mainAxisAlignment: (data['senderId'] == _firebaseAuth.currentUser!.uid)
-              ? MainAxisAlignment.end
-              : MainAxisAlignment.start,
+          crossAxisAlignment:
+          isCurrentUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
-            Text(data['senderEmail']),
-            const SizedBox(height: 5),
             ChatBubble(
-                message: data['message'],
-                isCurrentUser:
-                    data['senderId'] == _firebaseAuth.currentUser!.uid),
+              message: data['message'] ?? '',
+              isCurrentUser: isCurrentUser,
+            ),
+            const SizedBox(height: 2),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
+                timeText,
+                style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  // build message input
+  // ---------------- INPUT ----------------
   Widget _buildMessageInput() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 25.0),
-      child: Row(
-        children: [
-          // textfield
-          Expanded(
-            child: MyTextField(
-              controller: _messageController,
-              hintText: 'Enter message',
-              obscureText: false,
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: MyTextField(
+                  controller: _messageController,
+                  hintText: "Message",
+                  obscureText: false,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            CircleAvatar(
+              radius: 22,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              child: IconButton(
+                icon: const Icon(Icons.send, size: 18, color: Colors.white),
+                onPressed: sendMessage,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------- SEND ----------------
+  void sendMessage() async {
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
+
+    await _chatService.sendMessage(widget.receiverID, text);
+    _messageController.clear();
+    _scrollToBottom();
+  }
+
+  // ---------------- CLEAR CHAT ----------------
+  void _confirmClearChat() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Clear chat"),
+        content: const Text("This will delete all messages in this chat."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _chatService.clearChat(widget.receiverID);
+            },
+            child: const Text(
+              "Clear",
+              style: TextStyle(color: Colors.red),
             ),
           ),
-
-          // send button
-          IconButton(
-            onPressed: sendMessage,
-            icon: const Icon(
-              Icons.arrow_upward,
-              size: 40,
-            ),
-          )
         ],
       ),
     );
