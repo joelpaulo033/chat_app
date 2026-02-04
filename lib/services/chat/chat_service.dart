@@ -5,7 +5,7 @@ class ChatService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Generate consistent chatId for two users
+  // Generate a consistent chatId for 1-on-1 chats
   String getChatId(String senderID, String receiverID) {
     return senderID.compareTo(receiverID) > 0
         ? '$receiverID-$senderID'
@@ -17,7 +17,6 @@ class ChatService {
     final senderID = _auth.currentUser!.uid;
     final chatId = getChatId(senderID, receiverID);
 
-    // Add message to subcollection 'messages'
     await _firestore
         .collection('chats')
         .doc(chatId)
@@ -29,8 +28,9 @@ class ChatService {
     });
   }
 
-  // Get messages between two users
-  Stream<QuerySnapshot> getMessages(String receiverID, String senderID) {
+  // Get messages
+  Stream<QuerySnapshot> getMessages(String receiverID) {
+    final senderID = _auth.currentUser!.uid;
     final chatId = getChatId(senderID, receiverID);
 
     return _firestore
@@ -41,7 +41,7 @@ class ChatService {
         .snapshots();
   }
 
-  // Clear all messages between two users
+  // Clear all messages
   Future<void> clearChat(String receiverID) async {
     final senderID = _auth.currentUser!.uid;
     final chatId = getChatId(senderID, receiverID);
@@ -54,6 +54,24 @@ class ChatService {
 
     for (var doc in query.docs) {
       await doc.reference.delete();
+    }
+  }
+
+  // Delete selected messages
+  Future<void> deleteSelectedMessages(List<String> messageIds, String receiverID) async {
+    final senderID = _auth.currentUser!.uid;
+    final chatId = getChatId(senderID, receiverID);
+
+    for (var id in messageIds) {
+      final docRef = _firestore
+          .collection('chats')
+          .doc(chatId)
+          .collection('messages')
+          .doc(id);
+      final doc = await docRef.get();
+      if (doc.exists && doc.data()!['senderId'] == senderID) {
+        await docRef.delete();
+      }
     }
   }
 }

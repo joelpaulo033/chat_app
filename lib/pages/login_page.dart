@@ -15,12 +15,10 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // text controllers
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
   void signIn() async {
-    // get the auth service
     final authService = Provider.of<AuthService>(context, listen: false);
 
     try {
@@ -29,7 +27,6 @@ class _LoginPageState extends State<LoginPage> {
         passwordController.text,
       );
 
-      // navigate to home page
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => HomePage()),
@@ -38,6 +35,7 @@ class _LoginPageState extends State<LoginPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
+          backgroundColor: Colors.redAccent,
         ),
       );
     }
@@ -45,73 +43,142 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Volcano Fire Gradient Colors
+    final gradientColors = [
+      Color(0xFFFF4500),
+      Color(0xFFFF6347),
+      Color(0xFFFF8C00),
+      Color(0xFFFFD700),
+    ];
+
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 25.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const SizedBox(height: 50),
-
-                // logo
-                Icon(
-                  Icons.message,
-                  size: 100,
-                  color: Theme.of(context).colorScheme.primary,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: gradientColors,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding:
+              const EdgeInsets.symmetric(horizontal: 20.0, vertical: 40),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: 500, // max width of the content
                 ),
-
-                const SizedBox(height: 50),
-
-                // welcome back message
-                const Text(
-                  "Welcome back you've been missed!",
-                  style: TextStyle(fontSize: 16),
-                ),
-
-                const SizedBox(height: 25),
-
-                // email textfield
-                MyTextField(
-                  controller: emailController,
-                  hintText: 'Email',
-                  obscureText: false,
-                ),
-
-                const SizedBox(height: 10),
-
-                // password textfield
-                MyTextField(
-                  controller: passwordController,
-                  hintText: 'Password',
-                  obscureText: true,
-                ),
-
-                const SizedBox(height: 25),
-
-                // sign in button
-                MyButton(onTap: signIn, text: "Sign In"),
-
-                const SizedBox(height: 50),
-
-                // not a member? register now
-                Row(
+                child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('Not a member?'),
-                    const SizedBox(width: 4),
-                    GestureDetector(
-                      onTap: widget.onTap,
-                      child: const Text(
-                        'Register now',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                    // App Icon
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [Colors.yellow, Colors.redAccent],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black38,
+                            blurRadius: 15,
+                            offset: Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: const CircleAvatar(
+                        radius: 60,
+                        backgroundColor: Colors.transparent,
+                        child: Icon(
+                          Icons.chat_bubble,
+                          size: 60,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
+                    const SizedBox(height: 20),
+
+                    // App Name
+                    Text(
+                      "Let's Chat",
+                      style: TextStyle(
+                        fontSize: 34,
+                        fontWeight: FontWeight.bold,
+                        foreground: Paint()
+                          ..shader = LinearGradient(
+                            colors: [
+                              Colors.redAccent,
+                              Colors.deepOrange,
+                              Colors.orangeAccent,
+                              Colors.yellow,
+                            ],
+                          ).createShader(Rect.fromLTWH(0, 0, 200, 70)),
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Welcome message
+                    const Text(
+                      "Welcome back, you've been missed!",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+
+                    // Email field
+                    MyTextField(
+                      controller: emailController,
+                      hintText: 'Email',
+                      obscureText: false,
+                    ),
+                    const SizedBox(height: 15),
+
+                    // Password field
+                    MyTextField(
+                      controller: passwordController,
+                      hintText: 'Password',
+                      obscureText: true,
+                    ),
+                    const SizedBox(height: 25),
+
+                    // Sign In button
+                    MyButton(
+                      onTap: signIn,
+                      text: "Sign In",
+                    ),
+                    const SizedBox(height: 30),
+
+                    // Register link
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'Not a member?',
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                        const SizedBox(width: 5),
+                        GestureDetector(
+                          onTap: widget.onTap,
+                          child: const Text(
+                            'Register now',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.yellowAccent,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
-                )
-              ],
+                ),
+              ),
             ),
           ),
         ),

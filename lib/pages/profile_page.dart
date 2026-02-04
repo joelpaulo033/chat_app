@@ -23,13 +23,20 @@ class _ProfilePageState extends State<ProfilePage> {
   String email = 'Loading...';
   String? profilePhotoUrl;
 
+  // Volcano Fire colors
+  final List<Color> volcanoColors = [
+    Color(0xFFFF4500), // OrangeRed
+    Color(0xFFFF6347), // Tomato
+    Color(0xFFFF8C00), // DarkOrange
+    Color(0xFFFFD700), // Gold
+  ];
+
   @override
   void initState() {
     super.initState();
     _loadUserDetails();
   }
 
-  // Load user details from Firestore
   Future<void> _loadUserDetails() async {
     if (currentUser == null) return;
     final snapshot = await FirebaseFirestore.instance
@@ -48,7 +55,6 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  // Pick and upload profile image
   Future<void> _pickImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null && currentUser != null) {
@@ -59,20 +65,15 @@ class _ProfilePageState extends State<ProfilePage> {
       await reference.putFile(File(image.path));
       String newPhotoUrl = await reference.getDownloadURL();
 
-      // Update Firestore
       await AuthService().updateProfilePhoto(currentUser!.uid, newPhotoUrl);
-
-      // Optional: update FirebaseAuth photoURL
       await currentUser!.updatePhotoURL(newPhotoUrl);
 
-      // Update UI immediately
       setState(() {
         profilePhotoUrl = newPhotoUrl;
       });
     }
   }
 
-  // Edit display name with validation
   Future<void> _editDisplayName() async {
     String newDisplayName = displayName;
     await showDialog(
@@ -94,17 +95,12 @@ class _ProfilePageState extends State<ProfilePage> {
           TextButton(
             onPressed: () async {
               if (currentUser != null) {
-                // Trim whitespace and fallback to email if empty
                 newDisplayName = newDisplayName.trim();
-                if (newDisplayName.isEmpty) {
-                  newDisplayName = email;
-                }
+                if (newDisplayName.isEmpty) newDisplayName = email;
 
-                // Update Firestore
                 await AuthService()
                     .updateDisplayName(currentUser!.uid, newDisplayName);
 
-                // Update local state
                 setState(() {
                   displayName = newDisplayName;
                 });
@@ -122,69 +118,98 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: volcanoColors,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 40),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Profile Picture
+                  Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 64,
+                        backgroundImage: (profilePhotoUrl != null &&
+                            profilePhotoUrl!.isNotEmpty)
+                            ? NetworkImage(profilePhotoUrl!)
+                            : null,
+                        backgroundColor: Colors.orangeAccent,
+                        child: (profilePhotoUrl == null || profilePhotoUrl!.isEmpty)
+                            ? const Icon(
+                          Icons.person,
+                          size: 64,
+                          color: Colors.white,
+                        )
+                            : null,
+                      ),
+                      Positioned(
+                        bottom: -10,
+                        left: 80,
+                        child: IconButton(
+                          onPressed: _pickImage,
+                          icon: const Icon(Icons.add_a_photo, color: Colors.white),
+                        ),
+                      )
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Display Name
+                  Text(
+                    displayName,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      foreground: Paint()
+                        ..shader = LinearGradient(
+                          colors: volcanoColors,
+                        ).createShader(Rect.fromLTWH(0, 0, 200, 50)),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Email
+                  Text(
+                    email,
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Edit Display Name Button
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 30, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      backgroundColor: volcanoColors[0], // OrangeRed
+                    ),
+                    onPressed: _editDisplayName,
+                    child: const Text(
+                      'Edit Display Name',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
       appBar: AppBar(
         title: const Text("Profile"),
         backgroundColor: Colors.transparent,
-        foregroundColor: Colors.grey,
+        foregroundColor: Colors.white,
         elevation: 0,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Profile Picture
-            Stack(
-              children: [
-                CircleAvatar(
-                  radius: 64,
-                  backgroundImage: (profilePhotoUrl != null &&
-                      profilePhotoUrl!.isNotEmpty)
-                      ? NetworkImage(profilePhotoUrl!)
-                      : null,
-                  child: (profilePhotoUrl == null || profilePhotoUrl!.isEmpty)
-                      ? const Icon(
-                    Icons.person,
-                    size: 64,
-                  )
-                      : null,
-                ),
-                Positioned(
-                  bottom: -10,
-                  left: 80,
-                  child: IconButton(
-                    onPressed: _pickImage,
-                    icon: const Icon(Icons.add_a_photo),
-                  ),
-                )
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            // Display Name
-            Text(
-              displayName,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 10),
-
-            // Email
-            Text(
-              email,
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 20),
-
-            // Edit Display Name Button
-            ElevatedButton(
-              onPressed: _editDisplayName,
-              child: const Text('Edit Display Name'),
-            ),
-          ],
-        ),
       ),
     );
   }

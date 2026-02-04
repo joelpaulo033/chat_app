@@ -14,10 +14,17 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-  // text controllers
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
+
+  // Volcano Fire colors
+  final List<Color> volcanoColors = [
+    Color(0xFFFF4500), // OrangeRed
+    Color(0xFFFF6347), // Tomato
+    Color(0xFFFF8C00), // DarkOrange
+    Color(0xFFFFD700), // Gold
+  ];
 
   void signUp() async {
     if (passwordController.text != confirmPasswordController.text) {
@@ -29,7 +36,6 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
-    // get auth service
     final authService = Provider.of<AuthService>(context, listen: false);
 
     try {
@@ -41,6 +47,7 @@ class _RegisterPageState extends State<RegisterPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
+          backgroundColor: volcanoColors[0],
         ),
       );
     }
@@ -49,81 +56,116 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 25.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const SizedBox(height: 50),
-
-                // logo
-                Icon(
-                  Icons.message,
-                  size: 100,
-                  color: Theme.of(context).colorScheme.primary,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: volcanoColors,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 40),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: 500, // maximum width for larger screens
                 ),
-
-                const SizedBox(height: 50),
-
-                // create account message
-                const Text(
-                  "Let's create an account for you!",
-                  style: TextStyle(fontSize: 16),
-                ),
-
-                const SizedBox(height: 25),
-
-                // email textfield
-                MyTextField(
-                  controller: emailController,
-                  hintText: 'Email',
-                  obscureText: false,
-                ),
-
-                const SizedBox(height: 10),
-
-                // password textfield
-                MyTextField(
-                  controller: passwordController,
-                  hintText: 'Password',
-                  obscureText: true,
-                ),
-
-                const SizedBox(height: 10),
-
-                // confirm password textfield
-                MyTextField(
-                  controller: confirmPasswordController,
-                  hintText: 'Confirm password',
-                  obscureText: true,
-                ),
-
-                const SizedBox(height: 25),
-
-                // sign up button
-                MyButton(onTap: signUp, text: "Sign Up"),
-
-                const SizedBox(height: 50),
-
-                // already a member? login now
-                Row(
+                child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('Already a member?'),
-                    const SizedBox(width: 4),
-                    GestureDetector(
-                      onTap: widget.onTap,
-                      child: const Text(
-                        'Login now',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                    // App Icon
+                    CircleAvatar(
+                      radius: 60,
+                      backgroundColor: volcanoColors[0],
+                      child: const Icon(
+                        Icons.message,
+                        size: 60,
+                        color: Colors.white,
                       ),
                     ),
+                    const SizedBox(height: 20),
+
+                    // Heading
+                    Text(
+                      "Let's create an account for you!",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        foreground: Paint()
+                          ..shader = LinearGradient(
+                            colors: volcanoColors,
+                          ).createShader(const Rect.fromLTWH(0, 0, 200, 50)),
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+
+                    // Email field
+                    MyTextField(
+                      controller: emailController,
+                      hintText: 'Email',
+                      obscureText: false,
+                    ),
+                    const SizedBox(height: 15),
+
+                    // Password field
+                    MyTextField(
+                      controller: passwordController,
+                      hintText: 'Password',
+                      obscureText: true,
+                    ),
+                    const SizedBox(height: 15),
+
+                    // Confirm password field
+                    MyTextField(
+                      controller: confirmPasswordController,
+                      hintText: 'Confirm password',
+                      obscureText: true,
+                    ),
+                    const SizedBox(height: 25),
+
+                    // Sign Up button
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [volcanoColors[0], volcanoColors[2]],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: MyButton(
+                        onTap: signUp,
+                        text: "Sign Up",
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+
+                    // Already a member? Login
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'Already a member?',
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                        const SizedBox(width: 5),
+                        GestureDetector(
+                          onTap: widget.onTap,
+                          child: Text(
+                            'Login now',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: volcanoColors[1], // Tomato
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
-                )
-              ],
+                ),
+              ),
             ),
           ),
         ),
