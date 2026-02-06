@@ -25,10 +25,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // Volcano Fire colors
   final List<Color> volcanoColors = [
-    Color(0xFFFF4500), // OrangeRed
-    Color(0xFFFF6347), // Tomato
-    Color(0xFFFF8C00), // DarkOrange
-    Color(0xFFFFD700), // Gold
+    const Color(0xFFFF4500), // OrangeRed
+    const Color(0xFFFF6347), // Tomato
+    const Color(0xFFFF8C00), // DarkOrange
+    const Color(0xFFFFD700), // Gold
   ];
 
   @override
@@ -60,7 +60,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (image != null && currentUser != null) {
       String fileName = DateTime.now().millisecondsSinceEpoch.toString();
       Reference reference =
-      FirebaseStorage.instance.ref().child('profile_images/$fileName');
+          FirebaseStorage.instance.ref().child('profile_images/$fileName');
 
       await reference.putFile(File(image.path));
       String newPhotoUrl = await reference.getDownloadURL();
@@ -84,8 +84,7 @@ class _ProfilePageState extends State<ProfilePage> {
           onChanged: (value) {
             newDisplayName = value;
           },
-          decoration:
-          const InputDecoration(hintText: "Enter new display name"),
+          decoration: const InputDecoration(hintText: "Enter new display name"),
         ),
         actions: [
           TextButton(
@@ -139,16 +138,17 @@ class _ProfilePageState extends State<ProfilePage> {
                       CircleAvatar(
                         radius: 64,
                         backgroundImage: (profilePhotoUrl != null &&
-                            profilePhotoUrl!.isNotEmpty)
+                                profilePhotoUrl!.isNotEmpty)
                             ? NetworkImage(profilePhotoUrl!)
                             : null,
                         backgroundColor: Colors.orangeAccent,
-                        child: (profilePhotoUrl == null || profilePhotoUrl!.isEmpty)
+                        child: (profilePhotoUrl == null ||
+                                profilePhotoUrl!.isEmpty)
                             ? const Icon(
-                          Icons.person,
-                          size: 64,
-                          color: Colors.white,
-                        )
+                                Icons.person,
+                                size: 64,
+                                color: Colors.white,
+                              )
                             : null,
                       ),
                       Positioned(
@@ -156,7 +156,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         left: 80,
                         child: IconButton(
                           onPressed: _pickImage,
-                          icon: const Icon(Icons.add_a_photo, color: Colors.white),
+                          icon: const Icon(Icons.add_a_photo,
+                              color: Colors.white),
                         ),
                       )
                     ],
@@ -172,7 +173,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       foreground: Paint()
                         ..shader = LinearGradient(
                           colors: volcanoColors,
-                        ).createShader(Rect.fromLTWH(0, 0, 200, 50)),
+                        ).createShader(const Rect.fromLTWH(0, 0, 200, 50)),
                     ),
                   ),
                   const SizedBox(height: 10),

@@ -28,12 +28,11 @@ class _ChatPageState extends State<ChatPage> {
   final _authService = AuthService();
 
   bool _selectionMode = false;
-  Set<String> _selectedMessageIds = {};
+  final Set<String> _selectedMessageIds = {};
 
-  String get displayName =>
-      (widget.receiverDisplayName?.trim().isEmpty ?? true)
-          ? widget.receiverEmail
-          : widget.receiverDisplayName!;
+  String get displayName => (widget.receiverDisplayName?.trim().isEmpty ?? true)
+      ? widget.receiverEmail
+      : widget.receiverDisplayName!;
 
   // Volcano Fire colors - darker shades for readability
   final List<Color> volcanoColors = [
@@ -75,7 +74,8 @@ class _ChatPageState extends State<ChatPage> {
       elevation: 0,
       title: Text(
         displayName,
-        style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
+        style:
+            const TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
       ),
       actions: [
         IconButton(
@@ -91,13 +91,16 @@ class _ChatPageState extends State<ChatPage> {
     return StreamBuilder<QuerySnapshot>(
       stream: _chatService.getMessages(widget.receiverID),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
         final docs = snapshot.data!.docs;
 
         if (docs.isEmpty) {
           return const Center(
-            child: Text('No messages yet', style: TextStyle(color: Colors.white70)),
+            child: Text('No messages yet',
+                style: TextStyle(color: Colors.white70)),
           );
         }
 
@@ -122,9 +125,10 @@ class _ChatPageState extends State<ChatPage> {
     final isSelected = _selectedMessageIds.contains(doc.id);
 
     // Colors for messages
-    final myMessageColor = const Color(0xFFFF6347); // Tomato
-    final receivedMessageColor = Colors.white; // high contrast on gradient
-    final selectedColor = const Color(0xFFFFA500).withOpacity(0.7); // DarkOrange semi-transparent
+    const myMessageColor = Color(0xFFFF6347); // Tomato
+    const receivedMessageColor = Colors.white; // high contrast on gradient
+    final selectedColor =
+        const Color(0xFFFFA500).withOpacity(0.7); // DarkOrange semi-transparent
 
     return GestureDetector(
       onLongPress: () {
@@ -149,7 +153,7 @@ class _ChatPageState extends State<ChatPage> {
         alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
         child: Column(
           crossAxisAlignment:
-          isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             Container(
               padding: const EdgeInsets.all(12),
@@ -179,7 +183,8 @@ class _ChatPageState extends State<ChatPage> {
               ),
             ),
             const SizedBox(height: 2),
-            Text(time, style: const TextStyle(fontSize: 10, color: Colors.white70)),
+            Text(time,
+                style: const TextStyle(fontSize: 10, color: Colors.white70)),
             const SizedBox(height: 8),
           ],
         ),

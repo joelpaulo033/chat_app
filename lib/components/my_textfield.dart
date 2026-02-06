@@ -5,6 +5,7 @@ class MyTextField extends StatelessWidget {
   final bool obscureText;
   final TextEditingController controller;
   final FocusNode? focusNode;
+  final Widget? suffixIcon; // Change this to Widget? so it can be any icon
 
   const MyTextField({
     super.key,
@@ -12,6 +13,7 @@ class MyTextField extends StatelessWidget {
     required this.obscureText,
     required this.controller,
     this.focusNode,
+    this.suffixIcon,
   });
 
   @override
@@ -21,24 +23,22 @@ class MyTextField extends StatelessWidget {
       child: TextField(
         controller: controller,
         focusNode: focusNode,
-        decoration: InputDecoration(
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                color: Theme.of(context).colorScheme.tertiary,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-            fillColor: Theme.of(context).colorScheme.secondary,
-            filled: true,
-            hintText: hintText,
-            hintStyle: TextStyle(
-              color: Theme.of(context).colorScheme.primary,
-            )),
         obscureText: obscureText,
+        decoration: InputDecoration(
+          enabledBorder: OutlineInputBorder(
+            borderSide:
+                BorderSide(color: Theme.of(context).colorScheme.tertiary),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide:
+                BorderSide(color: Theme.of(context).colorScheme.primary),
+          ),
+          fillColor: Theme.of(context).colorScheme.secondary,
+          filled: true,
+          hintText: hintText,
+          hintStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
+          suffixIcon: suffixIcon, // This line enables the eye icon
+        ),
       ),
     );
   }
