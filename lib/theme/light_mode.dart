@@ -44,10 +44,10 @@ class AppTheme {
       bodyLarge: TextStyle(color: Colors.black87),
       bodyMedium: TextStyle(color: Colors.black87),
     ),
-  );t
+  );late int
 
   // DARK MODE (Usiku)
-  static final ThemeData darkTheme = ThemeData(
+  static; final ThemeData darkTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
     scaffoldBackgroundColor: Colors.black,
