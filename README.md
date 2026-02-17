@@ -24,10 +24,6 @@ Make sure you have:
 📁 Installation & Setup
 1. Clone the repository
 git clone https://github.com/joelpaulo033/chat_app.git
-cd chat_app
-
-2. Install Flutter dependencies
-flutter pub get
 
 3. Setup Firebase
 Go to the Firebase Console
