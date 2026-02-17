@@ -187,7 +187,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final authService = Provider.of<AuthService>(context, listen: false);
     try {
       await authService.signOut();
-      if (!context.mounted) return;
+      if (!mounted) return;
       _showMessage("Logged out successfully!");
       Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {

@@ -39,7 +39,7 @@ class _RegisterPageState extends State<RegisterPage> {
         passwordController.text,
       );
     } catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
