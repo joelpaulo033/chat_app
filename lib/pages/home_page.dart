@@ -22,7 +22,7 @@ class _HomePageState extends State<HomePage> {
     const Color(0xFFFFD700),
   ];
 
-  int _selectedIndex = 0; // bottom nav
+  int _selectedIndex = 0;
   String _searchQuery = '';
 
   @override
@@ -104,7 +104,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ---------------- APP BAR ----------------
+  // APP BAR
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       title: const Text(
@@ -117,7 +117,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ---------------- SEARCH BAR ----------------
+  // SEARCH BAR
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.all(8.0),
@@ -143,8 +143,17 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ---------------- USER LIST ----------------
+  // USER LIST
   Widget _buildUserList() {
+    final currentUser = _authService.getCurrentUser();
+    if (currentUser == null) {
+      return const Center(
+          child: Text(
+            "No user signed in",
+            style: TextStyle(color: Colors.white),
+          ));
+    }
+
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: _authService.getUsersStream(),
       builder: (context, snapshot) {
@@ -159,9 +168,11 @@ class _HomePageState extends State<HomePage> {
 
         final users = snapshot.data!
             .where((userData) =>
-        userData['email'] != _authService.getCurrentUser()!.email)
-            .where((userData) =>
-            userData['displayName']!.toLowerCase().contains(_searchQuery))
+        userData['email'] != null &&
+            userData['email'] != currentUser.email)
+            .where((userData) => (userData['displayName'] ?? '')
+            .toLowerCase()
+            .contains(_searchQuery))
             .toList();
 
         if (users.isEmpty) {
@@ -185,10 +196,19 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ---------------- CHATS LIST ----------------
-  // ---------------- CHATS LIST ----------------
+  // CHATS LIST
   Widget _buildChatsList() {
-    final currentUserId = _authService.getCurrentUser()!.uid;
+    final currentUser = _authService.getCurrentUser();
+    if (currentUser == null) {
+      return const Center(
+        child: Text(
+          "No user signed in",
+          style: TextStyle(color: Colors.white),
+        ),
+      );
+    }
+
+    final currentUserId = currentUser.uid;
 
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -206,7 +226,6 @@ class _HomePageState extends State<HomePage> {
         }
 
         final chatDocs = snapshot.data!.docs;
-
         if (chatDocs.isEmpty) {
           return const Center(
             child: Text(
@@ -216,23 +235,20 @@ class _HomePageState extends State<HomePage> {
           );
         }
 
-        // Only include users you have actually chatted with
         final Map<String, Map<String, dynamic>> chatUsers = {};
 
         for (var doc in chatDocs) {
           final data = doc.data() as Map<String, dynamic>;
-          final participants = List<String>.from(data['participants']);
-          if (participants.length != 2) continue; // skip group chats
+          final participants = List<String>.from(data['participants'] ?? []);
+          if (participants.length != 2) continue;
 
-          final messages = data['messages'] as List<dynamic>?;
-          if (messages == null || messages.isEmpty) continue; // skip empty chats
+          final messages = data['messages'] as List<dynamic>? ?? [];
+          if (messages.isEmpty) continue;
 
           final otherId = participants.firstWhere((id) => id != currentUserId);
-
-          // Keep latest chat if multiple exist
           if (!chatUsers.containsKey(otherId) ||
               (messages.last['timestamp'] ?? 0) >
-                  (chatUsers[otherId]!['messages'].last['timestamp'] ?? 0)) {
+                  (chatUsers[otherId]!['messages']?.last['timestamp'] ?? 0)) {
             chatUsers[otherId] = data;
           }
         }
@@ -246,16 +262,15 @@ class _HomePageState extends State<HomePage> {
           );
         }
 
-        // Convert map to list and sort by last message timestamp descending
         final sortedChats = chatUsers.entries.toList()
           ..sort((a, b) {
-            final aMessages = a.value['messages'] as List<dynamic>;
-            final bMessages = b.value['messages'] as List<dynamic>;
+            final aMessages = a.value['messages'] as List<dynamic>? ?? [];
+            final bMessages = b.value['messages'] as List<dynamic>? ?? [];
             final aTimestamp =
             aMessages.isNotEmpty ? aMessages.last['timestamp'] ?? 0 : 0;
             final bTimestamp =
             bMessages.isNotEmpty ? bMessages.last['timestamp'] ?? 0 : 0;
-            return bTimestamp.compareTo(aTimestamp); // descending
+            return bTimestamp.compareTo(aTimestamp);
           });
 
         return ListView(
@@ -263,10 +278,8 @@ class _HomePageState extends State<HomePage> {
           children: sortedChats.map((entry) {
             final otherUserId = entry.key;
             final chatData = entry.value;
-
-            final messages = chatData['messages'] as List<dynamic>;
-            final lastMessage =
-            messages.isNotEmpty ? messages.last['text'] : '';
+            final messages = chatData['messages'] as List<dynamic>? ?? [];
+            final lastMessage = messages.isNotEmpty ? messages.last['text'] : '';
             final lastTimestamp =
             messages.isNotEmpty ? messages.last['timestamp'] : null;
 
@@ -280,7 +293,7 @@ class _HomePageState extends State<HomePage> {
                   return const SizedBox.shrink();
                 }
                 final userData =
-                userSnapshot.data!.data() as Map<String, dynamic>;
+                    userSnapshot.data!.data() as Map<String, dynamic>? ?? {};
                 return _buildChatListItem(
                     userData, lastMessage, lastTimestamp, context);
               },
@@ -291,14 +304,12 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
-// ---------------- CHAT TILE ----------------
+  // CHAT TILE
   Widget _buildChatListItem(
       Map<String, dynamic> userData,
       String lastMessage,
       int? lastTimestamp,
-      BuildContext context,
-      ) {
+      BuildContext context) {
     final dateString = lastTimestamp != null
         ? DateTime.fromMillisecondsSinceEpoch(lastTimestamp)
         .toLocal()
@@ -331,10 +342,10 @@ class _HomePageState extends State<HomePage> {
               context,
               MaterialPageRoute(
                 builder: (context) => ChatPage(
-                  receiverEmail: userData['email'],
-                  receiverID: userData['uid'],
+                  receiverEmail: userData['email'] ?? '',
+                  receiverID: userData['uid'] ?? '',
                   receiverDisplayName:
-                  userData['displayName'] ?? userData['email'],
+                  userData['displayName'] ?? userData['email'] ?? '',
                 ),
               ),
             );
@@ -344,7 +355,7 @@ class _HomePageState extends State<HomePage> {
             child: Row(
               children: [
                 UserTile(
-                  text: userData['displayName'] ?? userData['email'],
+                  text: userData['displayName'] ?? userData['email'] ?? '',
                   profilePhotoUrl: userData['profilePhotoUrl'],
                 ),
                 const SizedBox(width: 12),
@@ -360,7 +371,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                       if (dateString.isNotEmpty)
                         Text(
-                          dateString.split('.')[0], // remove microseconds
+                          dateString.split('.')[0],
                           style: const TextStyle(
                               color: Colors.white54, fontSize: 12),
                         ),
@@ -375,8 +386,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
-  // ---------------- USER TILE ----------------
+  // USER TILE
   Widget _buildUserListItem(Map<String, dynamic> userData, BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -404,10 +414,10 @@ class _HomePageState extends State<HomePage> {
               context,
               MaterialPageRoute(
                 builder: (context) => ChatPage(
-                  receiverEmail: userData['email'],
-                  receiverID: userData['uid'],
+                  receiverEmail: userData['email'] ?? '',
+                  receiverID: userData['uid'] ?? '',
                   receiverDisplayName:
-                  userData['displayName'] ?? userData['email'],
+                  userData['displayName'] ?? userData['email'] ?? '',
                 ),
               ),
             );
@@ -415,7 +425,7 @@ class _HomePageState extends State<HomePage> {
           child: Padding(
             padding: const EdgeInsets.all(12.0),
             child: UserTile(
-              text: userData['displayName'] ?? userData['email'],
+              text: userData['displayName'] ?? userData['email'] ?? '',
               profilePhotoUrl: userData['profilePhotoUrl'],
             ),
           ),
