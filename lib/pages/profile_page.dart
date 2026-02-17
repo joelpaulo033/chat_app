@@ -169,6 +169,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 );
                 await user.reauthenticateWithCredential(cred);
                 await user.updatePassword(newPassword);
+                if (!context.mounted) return;
                 Navigator.pop(context);
                 _showMessage("Password updated successfully!");
               } catch (e) {
@@ -186,10 +187,11 @@ class _ProfilePageState extends State<ProfilePage> {
     final authService = Provider.of<AuthService>(context, listen: false);
     try {
       await authService.signOut();
-      _showMessage("Logged out successfully!");
       if (!context.mounted) return;
+      _showMessage("Logged out successfully!");
       Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
+      if (!context.mounted) return;
       _showMessage("Logout failed: $e");
     }
   }

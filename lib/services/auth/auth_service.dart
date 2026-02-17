@@ -2,36 +2,33 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 
 class AuthService extends ChangeNotifier {
-  // Instance of FirebaseAuth to handle authentication.
+  // Firebase instances
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
-
-  // Instance of FirebaseFirestore to interact with the database.
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Returns the currently signed-in user.
+  /// ================= GET CURRENT USER =================
   User? getCurrentUser() {
     return _firebaseAuth.currentUser;
   }
 
-  /// Signs in a user with the given email and password.
-  ///
-  /// If the user does not exist in the 'users' collection, a new document
-  /// will be created for them.
+  /// ================= SIGN IN =================
   Future<UserCredential> signInWithEmailandPassword(
       String email, String password) async {
     try {
       // Sign in with email and password.
-      UserCredential userCredential = await _firebaseAuth
-          .signInWithEmailAndPassword(email: email, password: password);
+      UserCredential userCredential =
+          await _firebaseAuth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
       // Fetch FCM token
       String? fcmToken = await FirebaseMessaging.instance.getToken();
 
-      // Ensure a document for the user exists in the 'users' collection.
-      _firestore.collection('users').doc(userCredential.user!.uid).set({
+      // Ensure user document exists with token
+      await _firestore.collection('users').doc(userCredential.user!.uid).set({
         'uid': userCredential.user!.uid,
         'email': email,
         'fcmToken': fcmToken, // Store token
@@ -39,27 +36,25 @@ class AuthService extends ChangeNotifier {
 
       return userCredential;
     } on FirebaseAuthException catch (e) {
-      // Handle authentication errors.
-      throw Exception(e.code);
+      throw Exception(_handleAuthError(e));
     }
   }
 
-  /// Creates a new user with the given email and password.
-  ///
-  /// After creating the user, a new document is added to the 'users' collection
-  /// with a default display name and an empty profile picture URL.
+  /// ================= SIGN UP =================
   Future<UserCredential> signUpWithEmailandPassword(
       String email, String password) async {
     try {
-      // Create a new user.
-      UserCredential userCredential = await _firebaseAuth
-          .createUserWithEmailAndPassword(email: email, password: password);
+      UserCredential userCredential =
+          await _firebaseAuth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
       // Fetch FCM token
       String? fcmToken = await FirebaseMessaging.instance.getToken();
 
       // Create a new document for the user in the 'users' collection.
-      _firestore.collection('users').doc(userCredential.user!.uid).set({
+      await _firestore.collection('users').doc(userCredential.user!.uid).set({
         'uid': userCredential.user!.uid,
         'email': email,
         'displayName': email.split('@')[0], // Default display name
@@ -69,37 +64,64 @@ class AuthService extends ChangeNotifier {
 
       return userCredential;
     } on FirebaseAuthException catch (e) {
-      // Handle authentication errors.
-      throw Exception(e.code);
+      throw Exception(_handleAuthError(e));
     } catch (e) {
-      // Handle other errors.
       throw Exception(e.toString());
     }
   }
 
-  /// Signs out the current user.
-  Future<void> signOut() async {
-    return await FirebaseAuth.instance.signOut();
+  /// ================= FORGOT PASSWORD =================
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _firebaseAuth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      throw Exception(_handleAuthError(e));
+    }
   }
 
-  /// Returns a stream of all users from the 'users' collection.
+  /// ================= SIGN OUT =================
+  Future<void> signOut() async {
+    await _firebaseAuth.signOut();
+  }
+
+  /// ================= USERS STREAM =================
   Stream<List<Map<String, dynamic>>> getUsersStream() {
     return _firestore.collection('users').snapshots().map((snapshot) {
       return snapshot.docs.map((doc) => doc.data()).toList();
     });
   }
 
-  /// Updates the display name for a given user.
+  /// ================= UPDATE DISPLAY NAME =================
   Future<void> updateDisplayName(String uid, String newDisplayName) async {
     await _firestore.collection('users').doc(uid).update({
       'displayName': newDisplayName,
     });
   }
 
-  /// Updates the profile photo URL for a given user.
+  /// ================= UPDATE PROFILE PHOTO =================
   Future<void> updateProfilePhoto(String uid, String newPhotoUrl) async {
     await _firestore.collection('users').doc(uid).update({
       'profilePhotoUrl': newPhotoUrl,
     });
+  }
+
+  /// ================= AUTH ERROR HANDLER =================
+  String _handleAuthError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-email':
+        return "Invalid email address.";
+      case 'user-not-found':
+        return "No user found with this email.";
+      case 'wrong-password':
+        return "Incorrect password.";
+      case 'email-already-in-use':
+        return "This email is already registered.";
+      case 'weak-password':
+        return "Password should be at least 6 characters.";
+      case 'network-request-failed':
+        return "Check your internet connection.";
+      default:
+        return e.message ?? "Authentication error occurred.";
+    }
   }
 }

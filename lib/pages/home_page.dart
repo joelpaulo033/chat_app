@@ -1,7 +1,6 @@
 import 'package:chat_app/components/my_drawer.dart';
 import 'package:chat_app/pages/chat_page.dart';
 import 'package:chat_app/services/auth/auth_service.dart';
-
 import 'package:chat_app/components/user_tile.dart';
 import 'package:chat_app/theme/app_theme.dart';
 import 'package:flutter/material.dart';
@@ -19,14 +18,13 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
+  int _selectedIndex = 0; // bottom nav
 
   void _onSearchChanged(String query) {
     setState(() {
       _searchQuery = query.toLowerCase();
     });
   }
-
-  int _selectedIndex = 0; // bottom nav
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +106,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ---------------- APP BAR ----------------
+  // APP BAR
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       title: const Text(
@@ -172,6 +170,7 @@ class _HomePageState extends State<HomePage> {
   // ---------------- USER LIST ----------------
   Widget _buildUserList() {
     final authService = Provider.of<AuthService>(context, listen: false);
+
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: authService.getUsersStream(),
       builder: (context, snapshot) {
@@ -250,7 +249,6 @@ class _HomePageState extends State<HomePage> {
         }
 
         final chatDocs = snapshot.data!.docs;
-
         if (chatDocs.isEmpty) {
           return const Center(
             child: Text(

@@ -19,13 +19,14 @@ class _LoginPageState extends State<LoginPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
+  // ================= SIGN IN =================
   void signIn() async {
     final authService = Provider.of<AuthService>(context, listen: false);
 
     try {
       await authService.signInWithEmailandPassword(
-        emailController.text,
-        passwordController.text,
+        emailController.text.trim(),
+        passwordController.text.trim(),
       );
       // Navigator will be handled by AuthGate automatically
     } catch (e) {
@@ -34,6 +35,43 @@ class _LoginPageState extends State<LoginPage> {
         SnackBar(
           content: Text(e.toString()),
           backgroundColor: AppTheme.fireBrick,
+        ),
+      );
+    }
+  }
+
+  // ================= FORGOT PASSWORD =================
+  void forgotPassword() async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+
+    if (emailController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please enter your email first"),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    try {
+      await authService.sendPasswordResetEmail(
+        emailController.text.trim(),
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Password reset email sent! Check your inbox."),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Colors.red,
         ),
       );
     }
@@ -50,13 +88,11 @@ class _LoginPageState extends State<LoginPage> {
               padding:
                   const EdgeInsets.symmetric(horizontal: 20.0, vertical: 40),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: 500,
-                ),
+                constraints: const BoxConstraints(maxWidth: 500),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // App Icon
+                    // ===== APP ICON =====
                     Container(
                       decoration: const BoxDecoration(
                         shape: BoxShape.circle,
@@ -88,9 +124,10 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                     ),
+
                     const SizedBox(height: 20),
 
-                    // App Name
+                    // ===== APP TITLE =====
                     Text(
                       "Let's Chat",
                       style: TextStyle(
@@ -103,6 +140,7 @@ class _LoginPageState extends State<LoginPage> {
                         letterSpacing: 1.2,
                       ),
                     ),
+
                     const SizedBox(height: 20),
 
                     const Text(
@@ -113,25 +151,27 @@ class _LoginPageState extends State<LoginPage> {
                         color: Colors.white70,
                       ),
                     ),
+
                     const SizedBox(height: 30),
 
-                    // Email field
+                    // ===== EMAIL FIELD =====
                     MyTextField(
                       controller: emailController,
                       hintText: 'Email',
                       obscureText: false,
                     ),
+
                     const SizedBox(height: 15),
 
-                    // Password field
+                    // ===== PASSWORD FIELD =====
                     MyTextField(
                       controller: passwordController,
                       hintText: 'Password',
                       obscureText: _isObscure,
                       suffixIcon: IconButton(
-                        icon: Icon(_isObscure
-                            ? Icons.visibility
-                            : Icons.visibility_off),
+                        icon: Icon(
+                          _isObscure ? Icons.visibility : Icons.visibility_off,
+                        ),
                         onPressed: () {
                           setState(() {
                             _isObscure = !_isObscure;
@@ -140,16 +180,34 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
 
+                    const SizedBox(height: 10),
+
+                    // ===== FORGOT PASSWORD =====
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: GestureDetector(
+                        onTap: forgotPassword,
+                        child: const Text(
+                          "Forgot Password?",
+                          style: TextStyle(
+                            color: Colors.yellowAccent,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+
                     const SizedBox(height: 25),
 
-                    // Sign In button
+                    // ===== SIGN IN BUTTON =====
                     MyButton(
                       onTap: signIn,
                       text: "Sign In",
                     ),
+
                     const SizedBox(height: 30),
 
-                    // Register link
+                    // ===== REGISTER LINK =====
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
