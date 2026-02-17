@@ -1,9 +1,12 @@
+import 'package:chat_app/components/chat_bubble.dart'; 
 import 'package:chat_app/components/my_textfield.dart';
 import 'package:chat_app/services/auth/auth_service.dart';
 import 'package:chat_app/services/chat/chat_service.dart';
+import 'package:chat_app/theme/app_theme.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 class ChatPage extends StatefulWidget {
   final String receiverEmail;
@@ -24,8 +27,6 @@ class ChatPage extends StatefulWidget {
 class _ChatPageState extends State<ChatPage> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
-  final _chatService = ChatService();
-  final _authService = AuthService();
 
   bool _selectionMode = false;
   final Set<String> _selectedMessageIds = {};
@@ -34,25 +35,11 @@ class _ChatPageState extends State<ChatPage> {
       ? widget.receiverEmail
       : widget.receiverDisplayName!;
 
-  // Volcano Fire colors - darker shades for readability
-  final List<Color> volcanoColors = [
-    const Color(0xFFB22222), // FireBrick
-    const Color(0xFFFF4500), // OrangeRed
-    const Color(0xFFFF8C00), // DarkOrange
-    const Color(0xFFFFD700), // Gold
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: volcanoColors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
+        decoration: AppTheme.darkVolcanoGradient,
         child: SafeArea(
           child: Column(
             children: [
@@ -88,11 +75,15 @@ class _ChatPageState extends State<ChatPage> {
 
   // ---------------- MESSAGE LIST ----------------
   Widget _buildMessageList() {
+    final chatService = Provider.of<ChatService>(context, listen: false);
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final currentUserId = authService.getCurrentUser()!.uid;
+
     return StreamBuilder<QuerySnapshot>(
-      stream: _chatService.getMessages(widget.receiverID),
+      stream: chatService.getMessages(currentUserId, widget.receiverID),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator(color: Colors.white));
         }
 
         final docs = snapshot.data!.docs;
@@ -103,6 +94,17 @@ class _ChatPageState extends State<ChatPage> {
                 style: TextStyle(color: Colors.white70)),
           );
         }
+
+        // Scroll to bottom after frame
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_scrollController.hasClients) {
+            _scrollController.animateTo(
+              _scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
+        });
 
         return ListView.builder(
           controller: _scrollController,
@@ -116,19 +118,14 @@ class _ChatPageState extends State<ChatPage> {
 
   // ---------------- MESSAGE ITEM ----------------
   Widget _buildMessageItem(DocumentSnapshot doc) {
+    final authService = Provider.of<AuthService>(context, listen: false);
     final data = doc.data() as Map<String, dynamic>;
-    final isMe = data['senderId'] == _authService.getCurrentUser()!.uid;
+    final isMe = data['senderID'] == authService.getCurrentUser()!.uid;
     final time = data['timestamp'] != null
         ? DateFormat('h:mm a').format((data['timestamp'] as Timestamp).toDate())
         : '';
 
     final isSelected = _selectedMessageIds.contains(doc.id);
-
-    // Colors for messages
-    const myMessageColor = Color(0xFFFF6347); // Tomato
-    const receivedMessageColor = Colors.white; // high contrast on gradient
-    final selectedColor =
-        const Color(0xFFFFA500).withOpacity(0.7); // DarkOrange semi-transparent
 
     return GestureDetector(
       onLongPress: () {
@@ -149,44 +146,12 @@ class _ChatPageState extends State<ChatPage> {
           });
         }
       },
-      child: Align(
-        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-        child: Column(
-          crossAxisAlignment:
-              isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? selectedColor
-                    : (isMe ? myMessageColor : receivedMessageColor),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  if (isMe)
-                    const BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 4,
-                      offset: Offset(2, 2),
-                    ),
-                  if (!isMe)
-                    const BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 4,
-                      offset: Offset(2, 2),
-                    ),
-                ],
-              ),
-              child: Text(
-                data['message'],
-                style: TextStyle(color: isMe ? Colors.white : Colors.black87),
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(time,
-                style: const TextStyle(fontSize: 10, color: Colors.white70)),
-            const SizedBox(height: 8),
-          ],
+      child: Container(
+        color: isSelected ? AppTheme.gold.withValues(alpha: 0.3) : Colors.transparent,
+        child: ChatBubble(
+          message: data['message'],
+          isCurrentUser: isMe,
+          time: time,
         ),
       ),
     );
@@ -197,7 +162,7 @@ class _ChatPageState extends State<ChatPage> {
     return SafeArea(
       child: Container(
         padding: const EdgeInsets.all(8),
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.black.withValues(alpha: 0.1),
         child: Row(
           children: [
             Expanded(
@@ -221,7 +186,8 @@ class _ChatPageState extends State<ChatPage> {
   void _sendMessage() async {
     if (_messageController.text.trim().isEmpty) return;
 
-    await _chatService.sendMessage(
+    final chatService = Provider.of<ChatService>(context, listen: false);
+    await chatService.sendMessage(
       widget.receiverID,
       _messageController.text.trim(),
     );
@@ -231,6 +197,7 @@ class _ChatPageState extends State<ChatPage> {
 
   // ---------------- DELETE OPTIONS ----------------
   void _openDeleteOptions() {
+    final chatService = Provider.of<ChatService>(context, listen: false);
     showModalBottomSheet(
       backgroundColor: Colors.white,
       context: context,
@@ -242,7 +209,7 @@ class _ChatPageState extends State<ChatPage> {
             title: const Text('Delete all messages'),
             onTap: () async {
               Navigator.pop(context);
-              await _chatService.clearChat(widget.receiverID);
+              await chatService.clearChat(widget.receiverID);
             },
           ),
           if (_selectedMessageIds.isNotEmpty)
@@ -251,7 +218,7 @@ class _ChatPageState extends State<ChatPage> {
               title: const Text('Delete selected messages'),
               onTap: () async {
                 Navigator.pop(context);
-                await _chatService.deleteSelectedMessages(
+                await chatService.deleteSelectedMessages(
                     _selectedMessageIds.toList(), widget.receiverID);
                 setState(() {
                   _selectedMessageIds.clear();

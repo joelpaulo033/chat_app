@@ -1,6 +1,7 @@
 import 'package:chat_app/services/auth/auth_service.dart';
 import 'package:chat_app/components/my_button.dart';
 import 'package:chat_app/components/my_textfield.dart';
+import 'package:chat_app/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -20,14 +21,6 @@ class _RegisterPageState extends State<RegisterPage> {
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
 
-  // Volcano Fire colors
-  final List<Color> volcanoColors = [
-    const Color(0xFFFF4500), // OrangeRed
-    const Color(0xFFFF6347), // Tomato
-    const Color(0xFFFF8C00), // DarkOrange
-    const Color(0xFFFFD700), // Gold
-  ];
-
   void signUp() async {
     if (passwordController.text != confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -46,10 +39,11 @@ class _RegisterPageState extends State<RegisterPage> {
         passwordController.text,
       );
     } catch (e) {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
-          backgroundColor: volcanoColors[0],
+          backgroundColor: AppTheme.fireBrick,
         ),
       );
     }
@@ -59,29 +53,23 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: volcanoColors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
+        decoration: AppTheme.volcanoGradient,
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 40),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(
-                  maxWidth: 500, // maximum width for larger screens
+                  maxWidth: 500,
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // App Icon
-                    CircleAvatar(
+                    const CircleAvatar(
                       radius: 60,
-                      backgroundColor: volcanoColors[0],
-                      child: const Icon(
+                      backgroundColor: AppTheme.orangeRed,
+                      child: Icon(
                         Icons.message,
                         size: 60,
                         color: Colors.white,
@@ -97,8 +85,8 @@ class _RegisterPageState extends State<RegisterPage> {
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         foreground: Paint()
-                          ..shader = LinearGradient(
-                            colors: volcanoColors,
+                          ..shader = const LinearGradient(
+                            colors: AppTheme.volcanoColors,
                           ).createShader(const Rect.fromLTWH(0, 0, 200, 50)),
                       ),
                     ),
@@ -149,18 +137,9 @@ class _RegisterPageState extends State<RegisterPage> {
                     const SizedBox(height: 25),
 
                     // Sign Up button
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [volcanoColors[0], volcanoColors[2]],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: MyButton(
-                        onTap: signUp,
-                        text: "Sign Up",
-                      ),
+                    MyButton(
+                      onTap: signUp,
+                      text: "Sign Up",
                     ),
                     const SizedBox(height: 30),
 
@@ -175,11 +154,11 @@ class _RegisterPageState extends State<RegisterPage> {
                         const SizedBox(width: 5),
                         GestureDetector(
                           onTap: widget.onTap,
-                          child: Text(
+                          child: const Text(
                             'Login now',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: volcanoColors[1], // Tomato
+                              color: AppTheme.tomato,
                             ),
                           ),
                         ),

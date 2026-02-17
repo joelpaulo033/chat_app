@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'package:chat_app/services/auth/auth_service.dart';
+import 'package:chat_app/theme/app_theme.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -14,19 +16,11 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final User? currentUser = AuthService().getCurrentUser();
   final ImagePicker _picker = ImagePicker();
 
   String displayName = 'Loading...';
   String email = 'Loading...';
   String? profilePhotoUrl;
-
-  final List<Color> volcanoColors = [
-    const Color(0xFFFF4500),
-    const Color(0xFFFF6347),
-    const Color(0xFFFF8C00),
-    const Color(0xFFFFD700),
-  ];
 
   @override
   void initState() {
@@ -35,9 +29,14 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadUserDetails() async {
-    if (currentUser == null) return;
-    final snapshot =
-    await FirebaseFirestore.instance.collection('users').doc(currentUser!.uid).get();
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final user = authService.getCurrentUser();
+    if (user == null) return;
+
+    final snapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
     final data = snapshot.data();
     if (data != null) {
       setState(() {
@@ -57,18 +56,20 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _pickImage() async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final user = authService.getCurrentUser();
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image != null && currentUser != null) {
+    if (image != null && user != null) {
       try {
         String fileName = DateTime.now().millisecondsSinceEpoch.toString();
         Reference reference =
-        FirebaseStorage.instance.ref().child('profile_images/$fileName');
+            FirebaseStorage.instance.ref().child('profile_images/$fileName');
 
         await reference.putFile(File(image.path));
         String newPhotoUrl = await reference.getDownloadURL();
 
-        await AuthService().updateProfilePhoto(currentUser!.uid, newPhotoUrl);
-        await currentUser!.updatePhotoURL(newPhotoUrl);
+        await authService.updateProfilePhoto(user.uid, newPhotoUrl);
+        await user.updatePhotoURL(newPhotoUrl);
 
         setState(() {
           profilePhotoUrl = newPhotoUrl;
@@ -82,6 +83,8 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _editDisplayName() async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final user = authService.getCurrentUser();
     String newDisplayName = displayName;
     await showDialog(
       context: context,
@@ -98,18 +101,18 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           TextButton(
             onPressed: () async {
-              if (currentUser != null) {
+              if (user != null) {
                 newDisplayName = newDisplayName.trim();
                 if (newDisplayName.isEmpty) newDisplayName = email;
 
                 try {
-                  await AuthService()
-                      .updateDisplayName(currentUser!.uid, newDisplayName);
+                  await authService.updateDisplayName(user.uid, newDisplayName);
 
                   setState(() {
                     displayName = newDisplayName;
                   });
 
+                  if (!context.mounted) return;
                   Navigator.pop(context);
                   _showMessage("Display name updated successfully!");
                 } catch (e) {
@@ -125,6 +128,10 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _changePassword() async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final user = authService.getCurrentUser();
+    if (user == null) return;
+
     String currentPassword = '';
     String newPassword = '';
 
@@ -149,18 +156,19 @@ class _ProfilePageState extends State<ProfilePage> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
           TextButton(
             onPressed: () async {
               try {
-                // Re-authenticate user
                 final cred = EmailAuthProvider.credential(
-                  email: currentUser!.email!,
+                  email: user.email!,
                   password: currentPassword,
                 );
-                await currentUser!.reauthenticateWithCredential(cred);
-
-                await currentUser!.updatePassword(newPassword);
+                await user.reauthenticateWithCredential(cred);
+                await user.updatePassword(newPassword);
                 Navigator.pop(context);
                 _showMessage("Password updated successfully!");
               } catch (e) {
@@ -175,10 +183,11 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _logout() async {
+    final authService = Provider.of<AuthService>(context, listen: false);
     try {
-      await AuthService().signOut();
+      await authService.signOut();
       _showMessage("Logged out successfully!");
-      // Navigate to login page or landing page
+      if (!context.mounted) return;
       Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
       _showMessage("Logout failed: $e");
@@ -195,13 +204,7 @@ class _ProfilePageState extends State<ProfilePage> {
         elevation: 0,
       ),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: volcanoColors.map((c) => c.withOpacity(0.9)).toList(),
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
+        decoration: AppTheme.darkVolcanoGradient,
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -209,13 +212,12 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Profile Picture
                   Stack(
                     children: [
                       Container(
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          boxShadow: const [
+                          boxShadow: [
                             BoxShadow(
                               color: Colors.black26,
                               blurRadius: 10,
@@ -226,13 +228,14 @@ class _ProfilePageState extends State<ProfilePage> {
                         child: CircleAvatar(
                           radius: 65,
                           backgroundImage: (profilePhotoUrl != null &&
-                              profilePhotoUrl!.isNotEmpty)
+                                  profilePhotoUrl!.isNotEmpty)
                               ? NetworkImage(profilePhotoUrl!)
                               : null,
-                          backgroundColor: Colors.orangeAccent,
+                          backgroundColor: AppTheme.orangeRed,
                           child: (profilePhotoUrl == null ||
-                              profilePhotoUrl!.isEmpty)
-                              ? const Icon(Icons.person, size: 65, color: Colors.white)
+                                  profilePhotoUrl!.isEmpty)
+                              ? const Icon(Icons.person,
+                                  size: 65, color: Colors.white)
                               : null,
                         ),
                       ),
@@ -240,11 +243,12 @@ class _ProfilePageState extends State<ProfilePage> {
                         bottom: 0,
                         right: 0,
                         child: CircleAvatar(
-                          backgroundColor: volcanoColors[0],
+                          backgroundColor: AppTheme.orangeRed,
                           radius: 20,
                           child: IconButton(
                             padding: EdgeInsets.zero,
-                            icon: const Icon(Icons.add_a_photo, color: Colors.white, size: 20),
+                            icon: const Icon(Icons.add_a_photo,
+                                color: Colors.white, size: 20),
                             onPressed: _pickImage,
                           ),
                         ),
@@ -252,26 +256,23 @@ class _ProfilePageState extends State<ProfilePage> {
                     ],
                   ),
                   const SizedBox(height: 25),
-
-                  // Display Name
                   Text(
                     displayName,
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
                       foreground: Paint()
-                        ..shader = LinearGradient(
-                          colors: volcanoColors,
+                        ..shader = const LinearGradient(
+                          colors: AppTheme.volcanoColors,
                         ).createShader(const Rect.fromLTWH(0, 0, 200, 50)),
                     ),
                   ),
                   const SizedBox(height: 8),
-
-                  // Email
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -284,14 +285,13 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                   const SizedBox(height: 25),
-
-                  // Edit Name Button
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 14),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 35, vertical: 14),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14)),
-                      backgroundColor: volcanoColors[0],
+                      backgroundColor: AppTheme.orangeRed,
                       shadowColor: Colors.black45,
                       elevation: 5,
                     ),
@@ -303,32 +303,34 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                   const SizedBox(height: 20),
-
-                  // Change Password & Logout
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.08),
+                      color: Colors.white.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(18),
                     ),
                     child: Column(
                       children: [
                         ListTile(
-                          leading: const Icon(Icons.lock_outline, color: Colors.white),
+                          leading: const Icon(Icons.lock_outline,
+                              color: Colors.white),
                           title: const Text(
                             'Change Password',
                             style: TextStyle(color: Colors.white70),
                           ),
-                          trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
+                          trailing: const Icon(Icons.arrow_forward_ios,
+                              color: Colors.white70, size: 16),
                           onTap: _changePassword,
                         ),
                         ListTile(
-                          leading: const Icon(Icons.logout, color: Colors.white),
+                          leading:
+                              const Icon(Icons.logout, color: Colors.white),
                           title: const Text(
                             'Logout',
                             style: TextStyle(color: Colors.white70),
                           ),
-                          trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
+                          trailing: const Icon(Icons.arrow_forward_ios,
+                              color: Colors.white70, size: 16),
                           onTap: _logout,
                         ),
                       ],

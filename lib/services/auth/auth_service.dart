@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -26,10 +27,14 @@ class AuthService extends ChangeNotifier {
       UserCredential userCredential = await _firebaseAuth
           .signInWithEmailAndPassword(email: email, password: password);
 
+      // Fetch FCM token
+      String? fcmToken = await FirebaseMessaging.instance.getToken();
+
       // Ensure a document for the user exists in the 'users' collection.
       _firestore.collection('users').doc(userCredential.user!.uid).set({
         'uid': userCredential.user!.uid,
         'email': email,
+        'fcmToken': fcmToken, // Store token
       }, SetOptions(merge: true));
 
       return userCredential;
@@ -50,12 +55,16 @@ class AuthService extends ChangeNotifier {
       UserCredential userCredential = await _firebaseAuth
           .createUserWithEmailAndPassword(email: email, password: password);
 
+      // Fetch FCM token
+      String? fcmToken = await FirebaseMessaging.instance.getToken();
+
       // Create a new document for the user in the 'users' collection.
       _firestore.collection('users').doc(userCredential.user!.uid).set({
         'uid': userCredential.user!.uid,
         'email': email,
         'displayName': email.split('@')[0], // Default display name
-        'profilePhotoUrl': '' // Initially empty profile photo
+        'profilePhotoUrl': '', // Initially empty profile photo
+        'fcmToken': fcmToken, // Store token
       });
 
       return userCredential;

@@ -1,7 +1,7 @@
-import 'package:chat_app/pages/home_page.dart';
 import 'package:chat_app/services/auth/auth_service.dart';
 import 'package:chat_app/components/my_button.dart';
 import 'package:chat_app/components/my_textfield.dart';
+import 'package:chat_app/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -27,41 +27,23 @@ class _LoginPageState extends State<LoginPage> {
         emailController.text,
         passwordController.text,
       );
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomePage()),
-      );
+      // Navigator will be handled by AuthGate automatically
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: AppTheme.fireBrick,
         ),
       );
     }
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
-    // Volcano Fire Gradient Colors
-    final gradientColors = [
-      const Color(0xFFFF4500),
-      const Color(0xFFFF6347),
-      const Color(0xFFFF8C00),
-      const Color(0xFFFFD700),
-    ];
-
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: gradientColors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
+        decoration: AppTheme.volcanoGradient,
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -90,7 +72,7 @@ class _LoginPageState extends State<LoginPage> {
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: LinearGradient(
-                            colors: [Colors.yellow, Colors.redAccent],
+                            colors: [AppTheme.gold, AppTheme.orangeRed],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -116,12 +98,7 @@ class _LoginPageState extends State<LoginPage> {
                         fontWeight: FontWeight.bold,
                         foreground: Paint()
                           ..shader = const LinearGradient(
-                            colors: [
-                              Colors.redAccent,
-                              Colors.deepOrange,
-                              Colors.orangeAccent,
-                              Colors.yellow,
-                            ],
+                            colors: AppTheme.volcanoColors,
                           ).createShader(const Rect.fromLTWH(0, 0, 200, 70)),
                         letterSpacing: 1.2,
                       ),
@@ -146,7 +123,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 15),
 
-                    // Password field - FIXED SYNTAX HERE
+                    // Password field
                     MyTextField(
                       controller: passwordController,
                       hintText: 'Password',
@@ -161,7 +138,7 @@ class _LoginPageState extends State<LoginPage> {
                           });
                         },
                       ),
-                    ), // This was the missing closing parenthesis!
+                    ),
 
                     const SizedBox(height: 25),
 
@@ -187,7 +164,7 @@ class _LoginPageState extends State<LoginPage> {
                             'Register now',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Colors.yellowAccent,
+                              color: AppTheme.gold,
                             ),
                           ),
                         ),

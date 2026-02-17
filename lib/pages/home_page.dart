@@ -1,9 +1,13 @@
 import 'package:chat_app/components/my_drawer.dart';
 import 'package:chat_app/pages/chat_page.dart';
 import 'package:chat_app/services/auth/auth_service.dart';
+
 import 'package:chat_app/components/user_tile.dart';
+import 'package:chat_app/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,17 +17,16 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final AuthService _authService = AuthService();
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = "";
 
-  final List<Color> volcanoColors = [
-    const Color(0xFFFF4500),
-    const Color(0xFFFF6347),
-    const Color(0xFFFF8C00),
-    const Color(0xFFFFD700),
-  ];
+  void _onSearchChanged(String query) {
+    setState(() {
+      _searchQuery = query.toLowerCase();
+    });
+  }
 
   int _selectedIndex = 0; // bottom nav
-  String _searchQuery = '';
 
   @override
   Widget build(BuildContext context) {
@@ -32,74 +35,75 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       drawer: const MyDrawer(),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: volcanoColors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
+        decoration: AppTheme.volcanoGradient,
         child: SafeArea(
           child: isLargeScreen
               ? Row(
-            children: [
-              // Chats on left
-              Container(
-                width: 400,
-                color: Colors.black.withOpacity(0.05),
-                child: Column(
+                  children: [
+                    // Chats on left
+                    Container(
+                      width: 400,
+                      color: Colors.black.withValues(alpha: 0.05),
+                      child: Column(
+                        children: [
+                          _buildAppBar(),
+                          _buildSearchBox(), // Search for chats in large screen
+                          Expanded(child: _buildChatsList()),
+                        ],
+                      ),
+                    ),
+                    // Users on right
+                    Expanded(
+                      child: Column(
+                        children: [
+                          _buildSearchBar(), // Search for users in large screen
+                          Expanded(child: _buildUserList()),
+                        ],
+                      ),
+                    ),
+                  ],
+                )
+              : Column(
                   children: [
                     _buildAppBar(),
-                    Expanded(child: _buildChatsList()),
+                    if (_selectedIndex == 0)
+                      _buildSearchBar(), // Search for users in small screen
+                    if (_selectedIndex == 1)
+                      _buildSearchBox(), // Search for chats in small screen
+                    Expanded(
+                      child: _selectedIndex == 0
+                          ? _buildUserList()
+                          : _buildChatsList(),
+                    ),
                   ],
                 ),
-              ),
-              // Users on right
-              Expanded(
-                child: Column(
-                  children: [
-                    _buildSearchBar(),
-                    Expanded(child: _buildUserList()),
-                  ],
-                ),
-              ),
-            ],
-          )
-              : Column(
-            children: [
-              _buildAppBar(),
-              if (_selectedIndex == 0) _buildSearchBar(),
-              Expanded(
-                child: _selectedIndex == 0
-                    ? _buildUserList()
-                    : _buildChatsList(),
-              ),
-            ],
-          ),
         ),
       ),
       bottomNavigationBar: !isLargeScreen
           ? BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        backgroundColor: Colors.black.withOpacity(0.1),
-        selectedItemColor: volcanoColors[0],
-        unselectedItemColor: Colors.white70,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Users',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat),
-            label: 'Chats',
-          ),
-        ],
-      )
+              currentIndex: _selectedIndex,
+              backgroundColor: Colors.black.withValues(alpha: 0.1),
+              selectedItemColor: AppTheme.orangeRed,
+              unselectedItemColor: Colors.white70,
+              onTap: (index) {
+                setState(() {
+                  _selectedIndex = index;
+                  // Clear search query when switching tabs
+                  _searchController.clear();
+                  _searchQuery = "";
+                });
+              },
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.people),
+                  label: 'Users',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.chat),
+                  label: 'Chats',
+                ),
+              ],
+            )
           : null,
     );
   }
@@ -117,19 +121,16 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ---------------- SEARCH BAR ----------------
+  // ---------------- USER SEARCH BAR ----------------
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: TextField(
-        onChanged: (val) {
-          setState(() {
-            _searchQuery = val.toLowerCase();
-          });
-        },
+        controller: _searchController,
+        onChanged: _onSearchChanged,
         decoration: InputDecoration(
           hintText: 'Search users...',
-          fillColor: Colors.white.withOpacity(0.2),
+          fillColor: Colors.white.withValues(alpha: 0.2),
           filled: true,
           prefixIcon: const Icon(Icons.search, color: Colors.white),
           border: OutlineInputBorder(
@@ -143,10 +144,36 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // ---------------- CHAT SEARCH BOX ----------------
+  Widget _buildSearchBox() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: TextField(
+          controller: _searchController,
+          onChanged: _onSearchChanged,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: "Search chats...",
+            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+            prefixIcon: const Icon(Icons.search, color: Colors.white70),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+        ),
+      ),
+    );
+  }
+
   // ---------------- USER LIST ----------------
   Widget _buildUserList() {
+    final authService = Provider.of<AuthService>(context, listen: false);
     return StreamBuilder<List<Map<String, dynamic>>>(
-      stream: _authService.getUsersStream(),
+      stream: authService.getUsersStream(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return const Center(
@@ -157,17 +184,21 @@ class _HomePageState extends State<HomePage> {
               child: CircularProgressIndicator(color: Colors.white));
         }
 
-        final users = snapshot.data!
+        final users = snapshot.data!;
+
+        final filteredUsers = users
             .where((userData) =>
-        userData['email'] != _authService.getCurrentUser()!.email)
-            .where((userData) =>
-            userData['displayName']!.toLowerCase().contains(_searchQuery))
+                userData['email'] != authService.getCurrentUser()?.email)
+            .where((userData) => (userData['displayName'] ?? userData['email'])
+                .toString()
+                .toLowerCase()
+                .contains(_searchQuery))
             .toList();
 
-        if (users.isEmpty) {
+        if (filteredUsers.isEmpty) {
           return const Center(
             child: Text(
-              "No other users found",
+              "No users found",
               style: TextStyle(color: Colors.white70),
             ),
           );
@@ -175,9 +206,9 @@ class _HomePageState extends State<HomePage> {
 
         return ListView.builder(
           padding: const EdgeInsets.symmetric(vertical: 8),
-          itemCount: users.length,
+          itemCount: filteredUsers.length,
           itemBuilder: (context, index) {
-            final userData = users[index];
+            final userData = filteredUsers[index];
             return _buildUserListItem(userData, context);
           },
         );
@@ -186,19 +217,32 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ---------------- CHATS LIST ----------------
-  // ---------------- CHATS LIST ----------------
   Widget _buildChatsList() {
-    final currentUserId = _authService.getCurrentUser()!.uid;
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final currentUserId = authService.getCurrentUser()?.uid;
+
+    if (currentUserId == null) return const SizedBox();
 
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('chats')
           .where('participants', arrayContains: currentUserId)
+          .orderBy('lastTimestamp', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return const Center(
-              child: Text("Error", style: TextStyle(color: Colors.white)));
+          debugPrint("Error loading chats: ${snapshot.error}");
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Text(
+                "Click the link in your terminal to create the Firestore Index for your chats list.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7), fontSize: 12),
+              ),
+            ),
+          );
         }
         if (!snapshot.hasData) {
           return const Center(
@@ -216,59 +260,14 @@ class _HomePageState extends State<HomePage> {
           );
         }
 
-        // Only include users you have actually chatted with
-        final Map<String, Map<String, dynamic>> chatUsers = {};
-
-        for (var doc in chatDocs) {
-          final data = doc.data() as Map<String, dynamic>;
-          final participants = List<String>.from(data['participants']);
-          if (participants.length != 2) continue; // skip group chats
-
-          final messages = data['messages'] as List<dynamic>?;
-          if (messages == null || messages.isEmpty) continue; // skip empty chats
-
-          final otherId = participants.firstWhere((id) => id != currentUserId);
-
-          // Keep latest chat if multiple exist
-          if (!chatUsers.containsKey(otherId) ||
-              (messages.last['timestamp'] ?? 0) >
-                  (chatUsers[otherId]!['messages'].last['timestamp'] ?? 0)) {
-            chatUsers[otherId] = data;
-          }
-        }
-
-        if (chatUsers.isEmpty) {
-          return const Center(
-            child: Text(
-              "No chats yet",
-              style: TextStyle(color: Colors.white70),
-            ),
-          );
-        }
-
-        // Convert map to list and sort by last message timestamp descending
-        final sortedChats = chatUsers.entries.toList()
-          ..sort((a, b) {
-            final aMessages = a.value['messages'] as List<dynamic>;
-            final bMessages = b.value['messages'] as List<dynamic>;
-            final aTimestamp =
-            aMessages.isNotEmpty ? aMessages.last['timestamp'] ?? 0 : 0;
-            final bTimestamp =
-            bMessages.isNotEmpty ? bMessages.last['timestamp'] ?? 0 : 0;
-            return bTimestamp.compareTo(aTimestamp); // descending
-          });
-
-        return ListView(
+        return ListView.builder(
           padding: const EdgeInsets.symmetric(vertical: 8),
-          children: sortedChats.map((entry) {
-            final otherUserId = entry.key;
-            final chatData = entry.value;
-
-            final messages = chatData['messages'] as List<dynamic>;
-            final lastMessage =
-            messages.isNotEmpty ? messages.last['text'] : '';
-            final lastTimestamp =
-            messages.isNotEmpty ? messages.last['timestamp'] : null;
+          itemCount: chatDocs.length,
+          itemBuilder: (context, index) {
+            final chatData = chatDocs[index].data() as Map<String, dynamic>;
+            final participants = List<String>.from(chatData['participants']);
+            final otherUserId =
+                participants.firstWhere((id) => id != currentUserId);
 
             return FutureBuilder<DocumentSnapshot>(
               future: FirebaseFirestore.instance
@@ -280,147 +279,86 @@ class _HomePageState extends State<HomePage> {
                   return const SizedBox.shrink();
                 }
                 final userData =
-                userSnapshot.data!.data() as Map<String, dynamic>;
+                    userSnapshot.data!.data() as Map<String, dynamic>;
+
+                // Filter chats based on search query
+                final displayName =
+                    (userData['displayName'] ?? userData['email'])
+                        .toString()
+                        .toLowerCase();
+                if (_searchQuery.isNotEmpty &&
+                    !displayName.contains(_searchQuery)) {
+                  return const SizedBox.shrink(); // Hide if not matching search
+                }
+
                 return _buildChatListItem(
-                    userData, lastMessage, lastTimestamp, context);
+                  userData,
+                  chatData['lastMessage'] ?? '',
+                  chatData['lastTimestamp'] as Timestamp?,
+                  context,
+                );
               },
             );
-          }).toList(),
+          },
         );
       },
     );
   }
 
-
-// ---------------- CHAT TILE ----------------
+  // ---------------- CHAT TILE ----------------
   Widget _buildChatListItem(
-      Map<String, dynamic> userData,
-      String lastMessage,
-      int? lastTimestamp,
-      BuildContext context,
-      ) {
-    final dateString = lastTimestamp != null
-        ? DateTime.fromMillisecondsSinceEpoch(lastTimestamp)
-        .toLocal()
-        .toString()
+    Map<String, dynamic> userData,
+    String lastMessage,
+    Timestamp? lastTimestamp,
+    BuildContext context,
+  ) {
+    final timeString = lastTimestamp != null
+        ? DateFormat('h:mm a').format(lastTimestamp.toDate())
         : '';
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: volcanoColors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 4,
-            offset: Offset(2, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ChatPage(
-                  receiverEmail: userData['email'],
-                  receiverID: userData['uid'],
-                  receiverDisplayName:
-                  userData['displayName'] ?? userData['email'],
-                ),
-              ),
-            );
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Row(
-              children: [
-                UserTile(
-                  text: userData['displayName'] ?? userData['email'],
-                  profilePhotoUrl: userData['profilePhotoUrl'],
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        lastMessage,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white70),
-                      ),
-                      if (dateString.isNotEmpty)
-                        Text(
-                          dateString.split('.')[0], // remove microseconds
-                          style: const TextStyle(
-                              color: Colors.white54, fontSize: 12),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
+    return UserTile(
+      text: userData['displayName'] ?? userData['email'],
+      subtitle: lastMessage,
+      profilePhotoUrl: userData['profilePhotoUrl'],
+      trailing: timeString.isNotEmpty
+          ? Text(
+              timeString,
+              style: const TextStyle(color: Colors.white54, fontSize: 12),
+            )
+          : null,
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatPage(
+              receiverEmail: userData['email'],
+              receiverID: userData['uid'],
+              receiverDisplayName: userData['displayName'] ?? userData['email'],
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-
   // ---------------- USER TILE ----------------
-  Widget _buildUserListItem(Map<String, dynamic> userData, BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: volcanoColors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 4,
-            offset: Offset(2, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ChatPage(
-                  receiverEmail: userData['email'],
-                  receiverID: userData['uid'],
-                  receiverDisplayName:
-                  userData['displayName'] ?? userData['email'],
-                ),
-              ),
-            );
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: UserTile(
-              text: userData['displayName'] ?? userData['email'],
-              profilePhotoUrl: userData['profilePhotoUrl'],
+  Widget _buildUserListItem(
+      Map<String, dynamic> userData, BuildContext context) {
+    return UserTile(
+      text: userData['displayName'] ?? userData['email'],
+      profilePhotoUrl: userData['profilePhotoUrl'],
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatPage(
+              receiverEmail: userData['email'],
+              receiverID: userData['uid'],
+              receiverDisplayName: userData['displayName'] ?? userData['email'],
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

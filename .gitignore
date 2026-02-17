@@ -1,2 +1,10 @@
 .idea/
-.idea/
+.dart_tool/
+build/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+pubspec.lock
+**/doc/api/
+.dart_tool/chrome-device/
