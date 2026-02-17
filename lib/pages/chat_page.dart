@@ -28,20 +28,43 @@ class _ChatPageState extends State<ChatPage> {
   final _authService = AuthService();
 
   bool _selectionMode = false;
-  Set<String> _selectedMessageIds = {};
+  final Set<String> _selectedMessageIds = {};
 
   String get displayName =>
       (widget.receiverDisplayName?.trim().isEmpty ?? true)
           ? widget.receiverEmail
           : widget.receiverDisplayName!;
 
-  // Volcano Fire colors - darker shades for readability
   final List<Color> volcanoColors = [
-    const Color(0xFFB22222), // FireBrick
-    const Color(0xFFFF4500), // OrangeRed
-    const Color(0xFFFF8C00), // DarkOrange
-    const Color(0xFFFFD700), // Gold
+    const Color(0xFFB22222),
+    const Color(0xFFFF4500),
+    const Color(0xFFFF8C00),
+    const Color(0xFFFFD700),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _markMessagesAsRead();
+  }
+
+  // ---------------- MARK MESSAGES AS READ ----------------
+  Future<void> _markMessagesAsRead() async {
+    final currentUserId = _authService.getCurrentUser()!.uid;
+    final chatId = _chatService.getChatId(currentUserId, widget.receiverID);
+
+    final unreadMessages = await FirebaseFirestore.instance
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .where('receiverId', isEqualTo: currentUserId)
+        .where('isRead', isEqualTo: false)
+        .get();
+
+    for (var doc in unreadMessages.docs) {
+      await doc.reference.update({'isRead': true});
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,11 +98,11 @@ class _ChatPageState extends State<ChatPage> {
       elevation: 0,
       title: Text(
         displayName,
-        style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
+        style: const TextStyle(fontWeight: FontWeight.w600),
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.delete_outline, color: Colors.white),
+          icon: const Icon(Icons.delete_outline),
           onPressed: _openDeleteOptions,
         ),
       ],
@@ -91,13 +114,16 @@ class _ChatPageState extends State<ChatPage> {
     return StreamBuilder<QuerySnapshot>(
       stream: _chatService.getMessages(widget.receiverID),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
         final docs = snapshot.data!.docs;
 
         if (docs.isEmpty) {
           return const Center(
-            child: Text('No messages yet', style: TextStyle(color: Colors.white70)),
+            child: Text('No messages yet',
+                style: TextStyle(color: Colors.white70)),
           );
         }
 
@@ -115,16 +141,17 @@ class _ChatPageState extends State<ChatPage> {
   Widget _buildMessageItem(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     final isMe = data['senderId'] == _authService.getCurrentUser()!.uid;
+
     final time = data['timestamp'] != null
-        ? DateFormat('h:mm a').format((data['timestamp'] as Timestamp).toDate())
+        ? DateFormat('h:mm a')
+        .format((data['timestamp'] as Timestamp).toDate())
         : '';
 
     final isSelected = _selectedMessageIds.contains(doc.id);
 
-    // Colors for messages
-    final myMessageColor = const Color(0xFFFF6347); // Tomato
-    final receivedMessageColor = Colors.white; // high contrast on gradient
-    final selectedColor = const Color(0xFFFFA500).withOpacity(0.7); // DarkOrange semi-transparent
+    const myMessageColor = Color(0xFFFF6347);
+    const receivedMessageColor = Colors.white;
+    final selectedColor = const Color(0xFFFFA500).withOpacity(0.7);
 
     return GestureDetector(
       onLongPress: () {
@@ -158,28 +185,17 @@ class _ChatPageState extends State<ChatPage> {
                     ? selectedColor
                     : (isMe ? myMessageColor : receivedMessageColor),
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  if (isMe)
-                    const BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 4,
-                      offset: Offset(2, 2),
-                    ),
-                  if (!isMe)
-                    const BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 4,
-                      offset: Offset(2, 2),
-                    ),
-                ],
               ),
               child: Text(
                 data['message'],
-                style: TextStyle(color: isMe ? Colors.white : Colors.black87),
+                style: TextStyle(
+                    color: isMe ? Colors.white : Colors.black87),
               ),
             ),
             const SizedBox(height: 2),
-            Text(time, style: const TextStyle(fontSize: 10, color: Colors.white70)),
+            Text(time,
+                style:
+                const TextStyle(fontSize: 10, color: Colors.white70)),
             const SizedBox(height: 8),
           ],
         ),
@@ -227,7 +243,6 @@ class _ChatPageState extends State<ChatPage> {
   // ---------------- DELETE OPTIONS ----------------
   void _openDeleteOptions() {
     showModalBottomSheet(
-      backgroundColor: Colors.white,
       context: context,
       builder: (_) => Column(
         mainAxisSize: MainAxisSize.min,
@@ -247,7 +262,9 @@ class _ChatPageState extends State<ChatPage> {
               onTap: () async {
                 Navigator.pop(context);
                 await _chatService.deleteSelectedMessages(
-                    _selectedMessageIds.toList(), widget.receiverID);
+                  _selectedMessageIds.toList(),
+                  widget.receiverID,
+                );
                 setState(() {
                   _selectedMessageIds.clear();
                   _selectionMode = false;

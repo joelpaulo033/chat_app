@@ -14,16 +14,18 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  bool _isObscurepassword = true;
+  bool _isObscureConfirm = true;
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
 
   // Volcano Fire colors
   final List<Color> volcanoColors = [
-    Color(0xFFFF4500), // OrangeRed
-    Color(0xFFFF6347), // Tomato
-    Color(0xFFFF8C00), // DarkOrange
-    Color(0xFFFFD700), // Gold
+    const Color(0xFFFF4500), // OrangeRed
+    const Color(0xFFFF6347), // Tomato
+    const Color(0xFFFF8C00), // DarkOrange
+    const Color(0xFFFFD700), // Gold
   ];
 
   void signUp() async {
@@ -114,7 +116,17 @@ class _RegisterPageState extends State<RegisterPage> {
                     MyTextField(
                       controller: passwordController,
                       hintText: 'Password',
-                      obscureText: true,
+                      obscureText: _isObscurepassword,
+                      suffixIcon: IconButton(
+                        icon: Icon(_isObscurepassword
+                            ? Icons.visibility
+                            : Icons.visibility_off),
+                        onPressed: () {
+                          setState(() {
+                            _isObscurepassword = !_isObscurepassword;
+                          });
+                        },
+                      ),
                     ),
                     const SizedBox(height: 15),
 
@@ -122,7 +134,17 @@ class _RegisterPageState extends State<RegisterPage> {
                     MyTextField(
                       controller: confirmPasswordController,
                       hintText: 'Confirm password',
-                      obscureText: true,
+                      obscureText: _isObscureConfirm,
+                      suffixIcon: IconButton(
+                        icon: Icon(_isObscureConfirm
+                            ? Icons.visibility
+                            : Icons.visibility_off),
+                        onPressed: () {
+                          setState(() {
+                            _isObscureConfirm = !_isObscureConfirm;
+                          });
+                        },
+                      ),
                     ),
                     const SizedBox(height: 25),
 

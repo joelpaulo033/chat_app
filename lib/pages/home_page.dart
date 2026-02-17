@@ -1,7 +1,7 @@
 import 'package:chat_app/components/my_drawer.dart';
 import 'package:chat_app/pages/chat_page.dart';
 import 'package:chat_app/services/auth/auth_service.dart';
-import 'package:chat_app/components/user_tile.dart';
+import 'package:chat_app/services/chat/chat_service.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -14,6 +14,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final AuthService _authService = AuthService();
+  final ChatService _chatService = ChatService();
 
   final List<Color> volcanoColors = [
     const Color(0xFFFF4500),
@@ -22,7 +23,7 @@ class _HomePageState extends State<HomePage> {
     const Color(0xFFFFD700),
   ];
 
-  int _selectedIndex = 0; // bottom nav
+  int _selectedIndex = 0;
   String _searchQuery = '';
 
   @override
@@ -30,7 +31,7 @@ class _HomePageState extends State<HomePage> {
     final isLargeScreen = MediaQuery.of(context).size.width > 800;
 
     return Scaffold(
-      drawer: const MyDrawer(),
+      drawer: const MyDrawer(), // just keep it simple; logout is handled inside drawer
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -43,18 +44,17 @@ class _HomePageState extends State<HomePage> {
           child: isLargeScreen
               ? Row(
             children: [
-              // Chats on left
               Container(
                 width: 400,
                 color: Colors.black.withOpacity(0.05),
                 child: Column(
                   children: [
                     _buildAppBar(),
+                    _buildSearchBar(),
                     Expanded(child: _buildChatsList()),
                   ],
                 ),
               ),
-              // Users on right
               Expanded(
                 child: Column(
                   children: [
@@ -68,7 +68,7 @@ class _HomePageState extends State<HomePage> {
               : Column(
             children: [
               _buildAppBar(),
-              if (_selectedIndex == 0) _buildSearchBar(),
+              _buildSearchBar(),
               Expanded(
                 child: _selectedIndex == 0
                     ? _buildUserList()
@@ -91,12 +91,12 @@ class _HomePageState extends State<HomePage> {
         },
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Users',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.chat),
             label: 'Chats',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people),
+            label: 'Users',
           ),
         ],
       )
@@ -148,44 +148,88 @@ class _HomePageState extends State<HomePage> {
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: _authService.getUsersStream(),
       builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return const Center(
-              child: Text("Error", style: TextStyle(color: Colors.white)));
-        }
         if (!snapshot.hasData) {
           return const Center(
-              child: CircularProgressIndicator(color: Colors.white));
+            child: CircularProgressIndicator(color: Colors.white),
+          );
         }
 
         final users = snapshot.data!
-            .where((userData) =>
-        userData['email'] != _authService.getCurrentUser()!.email)
-            .where((userData) =>
-            userData['displayName']!.toLowerCase().contains(_searchQuery))
+            .where((u) =>
+        u['email'] != _authService.getCurrentUser()!.email &&
+            u['displayName']
+                .toLowerCase()
+                .contains(_searchQuery))
             .toList();
 
         if (users.isEmpty) {
           return const Center(
             child: Text(
-              "No other users found",
+              'No users found',
               style: TextStyle(color: Colors.white70),
             ),
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+        return ListView.separated(
+          padding: const EdgeInsets.all(12),
           itemCount: users.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
           itemBuilder: (context, index) {
-            final userData = users[index];
-            return _buildUserListItem(userData, context);
+            return _buildUserListItem(users[index], context);
           },
         );
       },
     );
   }
 
-  // ---------------- CHATS LIST ----------------
+  // ---------------- USER TILE ----------------
+  Widget _buildUserListItem(
+      Map<String, dynamic> userData, BuildContext context) {
+    final displayName = userData['displayName'] ?? userData['email'];
+    final email = userData['email'];
+
+    return Card(
+      color: Colors.white.withOpacity(0.1),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        contentPadding:
+        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: CircleAvatar(
+          radius: 24,
+          backgroundColor: Colors.orangeAccent,
+          child: Text(
+            displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+        ),
+        title: Text(
+          displayName,
+          style:
+          const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          email,
+          style: const TextStyle(color: Colors.white70),
+        ),
+        trailing: const Icon(Icons.chat, color: Colors.white),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ChatPage(
+                receiverEmail: email,
+                receiverID: userData['uid'],
+                receiverDisplayName: displayName,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   // ---------------- CHATS LIST ----------------
   Widget _buildChatsList() {
     final currentUserId = _authService.getCurrentUser()!.uid;
@@ -196,79 +240,37 @@ class _HomePageState extends State<HomePage> {
           .where('participants', arrayContains: currentUserId)
           .snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return const Center(
-              child: Text("Error", style: TextStyle(color: Colors.white)));
-        }
         if (!snapshot.hasData) {
           return const Center(
               child: CircularProgressIndicator(color: Colors.white));
         }
 
         final chatDocs = snapshot.data!.docs;
-
         if (chatDocs.isEmpty) {
           return const Center(
-            child: Text(
-              "No chats yet",
-              style: TextStyle(color: Colors.white70),
-            ),
-          );
+              child:
+              Text("No chats yet", style: TextStyle(color: Colors.white70)));
         }
 
-        // Only include users you have actually chatted with
         final Map<String, Map<String, dynamic>> chatUsers = {};
 
         for (var doc in chatDocs) {
           final data = doc.data() as Map<String, dynamic>;
           final participants = List<String>.from(data['participants']);
-          if (participants.length != 2) continue; // skip group chats
-
-          final messages = data['messages'] as List<dynamic>?;
-          if (messages == null || messages.isEmpty) continue; // skip empty chats
+          if (participants.length != 2) continue;
 
           final otherId = participants.firstWhere((id) => id != currentUserId);
-
-          // Keep latest chat if multiple exist
-          if (!chatUsers.containsKey(otherId) ||
-              (messages.last['timestamp'] ?? 0) >
-                  (chatUsers[otherId]!['messages'].last['timestamp'] ?? 0)) {
-            chatUsers[otherId] = data;
-          }
+          chatUsers[otherId] = data;
         }
-
-        if (chatUsers.isEmpty) {
-          return const Center(
-            child: Text(
-              "No chats yet",
-              style: TextStyle(color: Colors.white70),
-            ),
-          );
-        }
-
-        // Convert map to list and sort by last message timestamp descending
-        final sortedChats = chatUsers.entries.toList()
-          ..sort((a, b) {
-            final aMessages = a.value['messages'] as List<dynamic>;
-            final bMessages = b.value['messages'] as List<dynamic>;
-            final aTimestamp =
-            aMessages.isNotEmpty ? aMessages.last['timestamp'] ?? 0 : 0;
-            final bTimestamp =
-            bMessages.isNotEmpty ? bMessages.last['timestamp'] ?? 0 : 0;
-            return bTimestamp.compareTo(aTimestamp); // descending
-          });
 
         return ListView(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          children: sortedChats.map((entry) {
+          children: chatUsers.entries.map((entry) {
             final otherUserId = entry.key;
-            final chatData = entry.value;
-
-            final messages = chatData['messages'] as List<dynamic>;
+            final messages = entry.value['messages'] as List<dynamic>?;
             final lastMessage =
-            messages.isNotEmpty ? messages.last['text'] : '';
+            messages != null && messages.isNotEmpty ? messages.last['message'] ?? '' : '';
             final lastTimestamp =
-            messages.isNotEmpty ? messages.last['timestamp'] : null;
+            messages != null && messages.isNotEmpty ? messages.last['timestamp'] : null;
 
             return FutureBuilder<DocumentSnapshot>(
               future: FirebaseFirestore.instance
@@ -276,13 +278,18 @@ class _HomePageState extends State<HomePage> {
                   .doc(otherUserId)
                   .get(),
               builder: (context, userSnapshot) {
-                if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
-                  return const SizedBox.shrink();
-                }
+                if (!userSnapshot.hasData) return const SizedBox();
                 final userData =
                 userSnapshot.data!.data() as Map<String, dynamic>;
-                return _buildChatListItem(
-                    userData, lastMessage, lastTimestamp, context);
+
+                return StreamBuilder<int>(
+                  stream: _chatService.getUnreadCount(otherUserId),
+                  builder: (context, unreadSnapshot) {
+                    final unread = unreadSnapshot.data ?? 0;
+                    return _buildChatListItem(
+                        userData, lastMessage, lastTimestamp, context, unread);
+                  },
+                );
               },
             );
           }).toList(),
@@ -291,136 +298,63 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
-// ---------------- CHAT TILE ----------------
+  // ---------------- CHAT TILE ----------------
   Widget _buildChatListItem(
       Map<String, dynamic> userData,
       String lastMessage,
-      int? lastTimestamp,
+      dynamic lastTimestamp,
       BuildContext context,
-      ) {
-    final dateString = lastTimestamp != null
-        ? DateTime.fromMillisecondsSinceEpoch(lastTimestamp)
-        .toLocal()
-        .toString()
-        : '';
+      int unreadCount) {
+    String time = '';
+    if (lastTimestamp is Timestamp) {
+      time = DateTime.fromMillisecondsSinceEpoch(
+          lastTimestamp.millisecondsSinceEpoch)
+          .toLocal()
+          .toString()
+          .substring(11, 16); // HH:mm
+    }
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: volcanoColors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 4,
-            offset: Offset(2, 2),
-          ),
-        ],
+    return ListTile(
+      title: Text(
+        userData['displayName'] ?? userData['email'],
+        style: const TextStyle(color: Colors.white),
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ChatPage(
-                  receiverEmail: userData['email'],
-                  receiverID: userData['uid'],
-                  receiverDisplayName:
-                  userData['displayName'] ?? userData['email'],
-                ),
-              ),
-            );
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Row(
-              children: [
-                UserTile(
-                  text: userData['displayName'] ?? userData['email'],
-                  profilePhotoUrl: userData['profilePhotoUrl'],
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        lastMessage,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white70),
-                      ),
-                      if (dateString.isNotEmpty)
-                        Text(
-                          dateString.split('.')[0], // remove microseconds
-                          style: const TextStyle(
-                              color: Colors.white54, fontSize: 12),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
+      subtitle: Text(
+        lastMessage,
+        style: const TextStyle(color: Colors.white70),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: unreadCount > 0
+          ? Container(
+        padding: const EdgeInsets.all(6),
+        decoration: const BoxDecoration(
+          color: Colors.red,
+          shape: BoxShape.circle,
+        ),
+        child: Text(
+          unreadCount.toString(),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      )
+          : null,
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ChatPage(
+              receiverEmail: userData['email'],
+              receiverID: userData['uid'],
+              receiverDisplayName:
+              userData['displayName'] ?? userData['email'],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-
-  // ---------------- USER TILE ----------------
-  Widget _buildUserListItem(Map<String, dynamic> userData, BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: volcanoColors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 4,
-            offset: Offset(2, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ChatPage(
-                  receiverEmail: userData['email'],
-                  receiverID: userData['uid'],
-                  receiverDisplayName:
-                  userData['displayName'] ?? userData['email'],
-                ),
-              ),
-            );
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: UserTile(
-              text: userData['displayName'] ?? userData['email'],
-              profilePhotoUrl: userData['profilePhotoUrl'],
-            ),
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

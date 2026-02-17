@@ -23,8 +23,10 @@ class ChatService {
         .collection('messages')
         .add({
       'senderId': senderID,
+      'receiverId': receiverID,
       'message': message,
       'timestamp': FieldValue.serverTimestamp(),
+      'isRead': false, // mark unread
     });
   }
 
@@ -39,6 +41,39 @@ class ChatService {
         .collection('messages')
         .orderBy('timestamp', descending: false)
         .snapshots();
+  }
+
+  // Mark all messages as read for this chat
+  Future<void> markMessagesAsRead(String receiverID) async {
+    final currentUserID = _auth.currentUser!.uid;
+    final chatId = getChatId(currentUserID, receiverID);
+
+    final unreadMessages = await _firestore
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .where('receiverId', isEqualTo: currentUserID)
+        .where('isRead', isEqualTo: false)
+        .get();
+
+    for (var doc in unreadMessages.docs) {
+      await doc.reference.update({'isRead': true});
+    }
+  }
+
+  // Get unread count for badge
+  Stream<int> getUnreadCount(String otherUserID) {
+    final currentUserID = _auth.currentUser!.uid;
+    final chatId = getChatId(currentUserID, otherUserID);
+
+    return _firestore
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .where('receiverId', isEqualTo: currentUserID)
+        .where('isRead', isEqualTo: false)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
   }
 
   // Clear all messages
@@ -58,7 +93,8 @@ class ChatService {
   }
 
   // Delete selected messages
-  Future<void> deleteSelectedMessages(List<String> messageIds, String receiverID) async {
+  Future<void> deleteSelectedMessages(
+      List<String> messageIds, String receiverID) async {
     final senderID = _auth.currentUser!.uid;
     final chatId = getChatId(senderID, receiverID);
 

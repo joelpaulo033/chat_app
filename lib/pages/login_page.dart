@@ -15,6 +15,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  bool _isObscure = true;
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
@@ -35,20 +36,21 @@ class _LoginPageState extends State<LoginPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: Colors.black,
         ),
       );
     }
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     // Volcano Fire Gradient Colors
     final gradientColors = [
-      Color(0xFFFF4500),
-      Color(0xFFFF6347),
-      Color(0xFFFF8C00),
-      Color(0xFFFFD700),
+      const Color(0xFF0C1117),
+      const Color(0xFF090B10),
+      const Color(0xFF0C1117),
+      const Color(0xFF090B10),
     ];
 
     return Scaffold(
@@ -64,24 +66,19 @@ class _LoginPageState extends State<LoginPage> {
           child: Center(
             child: SingleChildScrollView(
               padding:
-              const EdgeInsets.symmetric(horizontal: 20.0, vertical: 40),
+                  const EdgeInsets.symmetric(horizontal: 20.0, vertical: 40),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(
-                  maxWidth: 500, // max width of the content
+                  maxWidth: 500,
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // App Icon
                     Container(
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [Colors.yellow, Colors.redAccent],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        boxShadow: const [
+                        boxShadow: [
                           BoxShadow(
                             color: Colors.black38,
                             blurRadius: 15,
@@ -89,13 +86,23 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ],
                       ),
-                      child: const CircleAvatar(
-                        radius: 60,
-                        backgroundColor: Colors.transparent,
-                        child: Icon(
-                          Icons.chat_bubble,
-                          size: 60,
-                          color: Colors.white,
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [Colors.yellow, Colors.redAccent],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                        child: const CircleAvatar(
+                          radius: 60,
+                          backgroundColor: Colors.transparent,
+                          child: Icon(
+                            Icons.chat_bubble,
+                            size: 60,
+                            color: Colors.black,
+                          ),
                         ),
                       ),
                     ),
@@ -108,20 +115,19 @@ class _LoginPageState extends State<LoginPage> {
                         fontSize: 34,
                         fontWeight: FontWeight.bold,
                         foreground: Paint()
-                          ..shader = LinearGradient(
+                          ..shader = const LinearGradient(
                             colors: [
                               Colors.redAccent,
                               Colors.deepOrange,
                               Colors.orangeAccent,
                               Colors.yellow,
                             ],
-                          ).createShader(Rect.fromLTWH(0, 0, 200, 70)),
+                          ).createShader(const Rect.fromLTWH(0, 0, 200, 70)),
                         letterSpacing: 1.2,
                       ),
                     ),
                     const SizedBox(height: 20),
 
-                    // Welcome message
                     const Text(
                       "Welcome back, you've been missed!",
                       textAlign: TextAlign.center,
@@ -140,12 +146,23 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 15),
 
-                    // Password field
+                    // Password field - FIXED SYNTAX HERE
                     MyTextField(
                       controller: passwordController,
                       hintText: 'Password',
-                      obscureText: true,
-                    ),
+                      obscureText: _isObscure,
+                      suffixIcon: IconButton(
+                        icon: Icon(_isObscure
+                            ? Icons.visibility
+                            : Icons.visibility_off),
+                        onPressed: () {
+                          setState(() {
+                            _isObscure = !_isObscure;
+                          });
+                        },
+                      ),
+                    ), // This was the missing closing parenthesis!
+
                     const SizedBox(height: 25),
 
                     // Sign In button
