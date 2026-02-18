@@ -94,12 +94,12 @@ class _RegisterPageState extends State<RegisterPage> {
                       "Let's create an account for you!",
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                         foreground: Paint()
                           ..shader = LinearGradient(
-                            colors: volcanoColors,
-                          ).createShader(const Rect.fromLTWH(0, 0, 200, 50)),
+                            colors:volcanoColors,
+                          ).createShader(const Rect.fromLTWH(0, 0, 200, 0)),
                       ),
                     ),
                     const SizedBox(height: 30),
@@ -107,7 +107,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     // Email field
                     MyTextField(
                       controller: emailController,
-                      hintText: 'Email',
+                      hintText: 'fredymichael@gmail.com',
                       obscureText: false,
                     ),
                     const SizedBox(height: 15),
@@ -170,7 +170,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       children: [
                         const Text(
                           'Already a member?',
-                          style: TextStyle(color: Colors.white70),
+                          style: TextStyle(color: Colors.white),
                         ),
                         const SizedBox(width: 5),
                         GestureDetector(
@@ -179,7 +179,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             'Login now',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: volcanoColors[1], // Tomato
+                              color: volcanoColors[3], // Tomato
                             ),
                           ),
                         ),
