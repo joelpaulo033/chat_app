@@ -29,11 +29,13 @@ class _LoginPageState extends State<LoginPage> {
         passwordController.text.trim(),
       );
 
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => HomePage()),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
@@ -62,6 +64,7 @@ class _LoginPageState extends State<LoginPage> {
         emailController.text.trim(),
       );
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Password reset email sent! Check your inbox."),
@@ -69,6 +72,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
@@ -99,83 +103,69 @@ class _LoginPageState extends State<LoginPage> {
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 20.0, vertical: 40),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20.0, vertical: 40),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 500),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-
                     // ===== APP ICON =====
                     Container(
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black38,
-                            blurRadius: 15,
-                            offset: Offset(0, 8),
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
                           ),
                         ],
                       ),
                       child: Container(
+                        padding: const EdgeInsets.all(4),
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [Colors.yellow, Colors.redAccent],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
+                          color: Colors.white24,
                         ),
                         child: const CircleAvatar(
-                          radius: 60,
-                          backgroundColor: Colors.transparent,
+                          radius: 50,
+                          backgroundColor: Colors.white,
                           child: Icon(
-                            Icons.chat_bubble,
-                            size: 60,
-                            color: Colors.white,
+                            Icons.chat_bubble_rounded,
+                            size: 45,
+                            color: Color(0xFFFF4500),
                           ),
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
 
                     // ===== APP TITLE =====
-                    Text(
+                    const Text(
                       "Let's Chat",
                       style: TextStyle(
-                        fontSize: 35,
-                        fontWeight: FontWeight.bold,
-                        foreground: Paint()
-                          ..shader = const LinearGradient(
-                            colors: [
-                              Colors.redAccent,
-                              Colors.deepOrange,
-                              Colors.orangeAccent,
-                              Colors.yellow,
-                            ],
-                          ).createShader(
-                            const Rect.fromLTWH(0, 0, 200, 70),
-                          ),
-                        letterSpacing: 1.2,
+                        fontSize: 42,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: -1,
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 8),
 
                     const Text(
                       "Welcome back, you've been missed!",
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white70,
                       ),
                     ),
 
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 48),
 
                     // ===== EMAIL FIELD =====
                     MyTextField(
@@ -184,7 +174,7 @@ class _LoginPageState extends State<LoginPage> {
                       obscureText: false,
                     ),
 
-                    const SizedBox(height: 15),
+                    const SizedBox(height: 16),
 
                     // ===== PASSWORD FIELD =====
                     MyTextField(
@@ -194,8 +184,9 @@ class _LoginPageState extends State<LoginPage> {
                       suffixIcon: IconButton(
                         icon: Icon(
                           _isObscure
-                              ? Icons.visibility
-                              : Icons.visibility_off,
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          color: Colors.grey.shade600,
                         ),
                         onPressed: () {
                           setState(() {
@@ -205,24 +196,28 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
 
                     // ===== FORGOT PASSWORD =====
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: GestureDetector(
-                        onTap: forgotPassword,
-                        child: const Text(
-                          "Forgot Password?",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: GestureDetector(
+                          onTap: forgotPassword,
+                          child: const Text(
+                            "Forgot Password?",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 25),
+                    const SizedBox(height: 32),
 
                     // ===== SIGN IN BUTTON =====
                     MyButton(
@@ -230,7 +225,7 @@ class _LoginPageState extends State<LoginPage> {
                       text: "Sign In",
                     ),
 
-                    const SizedBox(height: 25),
+                    const SizedBox(height: 32),
 
                     // ===== REGISTER LINK =====
                     Row(
@@ -238,7 +233,7 @@ class _LoginPageState extends State<LoginPage> {
                       children: [
                         const Text(
                           'Not a member?',
-                          style: TextStyle(color: Colors.white),
+                          style: TextStyle(color: Colors.white, fontSize: 15),
                         ),
                         const SizedBox(width: 5),
                         GestureDetector(
@@ -247,12 +242,15 @@ class _LoginPageState extends State<LoginPage> {
                             'Register now',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Colors.yellowAccent,
+                              color: Colors.white,
+                              decoration: TextDecoration.underline,
+                              fontSize: 15,
                             ),
                           ),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),

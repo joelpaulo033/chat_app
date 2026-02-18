@@ -17,15 +17,17 @@ class AuthService extends ChangeNotifier {
       String email, String password) async {
     try {
       UserCredential userCredential =
-      await _firebaseAuth.signInWithEmailAndPassword(
+          await _firebaseAuth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      // Ensure user document exists
+      // Ensure user document exists and set online
       await _firestore.collection('users').doc(userCredential.user!.uid).set({
         'uid': userCredential.user!.uid,
         'email': email,
+        'isOnline': true,
+        'lastSeen': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
       return userCredential;
@@ -39,7 +41,7 @@ class AuthService extends ChangeNotifier {
       String email, String password) async {
     try {
       UserCredential userCredential =
-      await _firebaseAuth.createUserWithEmailAndPassword(
+          await _firebaseAuth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
@@ -49,6 +51,8 @@ class AuthService extends ChangeNotifier {
         'email': email,
         'displayName': email.split('@')[0],
         'profilePhotoUrl': '',
+        'isOnline': true,
+        'lastSeen': FieldValue.serverTimestamp(),
       });
 
       return userCredential;
@@ -70,7 +74,22 @@ class AuthService extends ChangeNotifier {
 
   /// ================= SIGN OUT =================
   Future<void> signOut() async {
+    final user = _firebaseAuth.currentUser;
+    if (user != null) {
+      await updateUserStatus(false);
+    }
     await _firebaseAuth.signOut();
+  }
+
+  /// ================= UPDATE USER STATUS =================
+  Future<void> updateUserStatus(bool isOnline) async {
+    final uid = _firebaseAuth.currentUser?.uid;
+    if (uid != null) {
+      await _firestore.collection('users').doc(uid).update({
+        'isOnline': isOnline,
+        'lastSeen': FieldValue.serverTimestamp(),
+      });
+    }
   }
 
   /// ================= USERS STREAM =================

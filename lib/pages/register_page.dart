@@ -20,14 +20,6 @@ class _RegisterPageState extends State<RegisterPage> {
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
 
-  // Volcano Fire colors
-  final List<Color> volcanoColors = [
-    const Color(0xFFFF4500), // OrangeRed
-    const Color(0xFFFF6347), // Tomato
-    const Color(0xFFFF8C00), // DarkOrange
-    const Color(0xFFFFD700), // Gold
-  ];
-
   void signUp() async {
     if (passwordController.text != confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -45,11 +37,14 @@ class _RegisterPageState extends State<RegisterPage> {
         emailController.text,
         passwordController.text,
       );
+      if (!mounted) return;
+      // Navigate or show success if needed? Currently it just closes (implicit pop is usually done in main but let's see)
+      // Actually AuthGate handles it.
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
-          backgroundColor: volcanoColors[0],
         ),
       );
     }
@@ -57,11 +52,18 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    const gradientColors = [
+      Color(0xFFFF4500),
+      Color(0xFFFF6347),
+      Color(0xFFFF8C00),
+      Color(0xFFFFD700),
+    ];
+
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: volcanoColors,
+            colors: gradientColors,
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -69,122 +71,148 @@ class _RegisterPageState extends State<RegisterPage> {
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 40),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20.0, vertical: 40),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: 500, // maximum width for larger screens
-                ),
+                constraints: const BoxConstraints(maxWidth: 500),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // App Icon
-                    CircleAvatar(
-                      radius: 60,
-                      backgroundColor: volcanoColors[0],
-                      child: const Icon(
-                        Icons.message,
-                        size: 60,
-                        color: Colors.white,
+                    // ===== APP ICON =====
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white24,
+                        ),
+                        child: const CircleAvatar(
+                          radius: 50,
+                          backgroundColor: Colors.white,
+                          child: Icon(
+                            Icons.person_add_rounded,
+                            size: 45,
+                            color: Color(0xFFFF4500),
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 20),
 
-                    // Heading
-                    Text(
-                      "Let's create an account for you!",
+                    const SizedBox(height: 24),
+
+                    // ===== APP TITLE =====
+                    const Text(
+                      "Register",
+                      style: TextStyle(
+                        fontSize: 42,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: -1,
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    const Text(
+                      "Let's create an account for you",
                       textAlign: TextAlign.center,
                       style: TextStyle(
+                        color: Colors.white70,
                         fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        foreground: Paint()
-                          ..shader = LinearGradient(
-                            colors:volcanoColors,
-                          ).createShader(const Rect.fromLTWH(0, 0, 200, 0)),
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(height: 30),
 
-                    // Email field
+                    const SizedBox(height: 40),
+
+                    // email textfield
                     MyTextField(
-                      controller: emailController,
-                      hintText: 'fredymichael@gmail.com',
+                      hintText: "Email",
                       obscureText: false,
+                      controller: emailController,
                     ),
-                    const SizedBox(height: 15),
 
-                    // Password field
+                    const SizedBox(height: 16),
+
+                    // password textfield
                     MyTextField(
-                      controller: passwordController,
-                      hintText: 'Password',
+                      hintText: "Password",
                       obscureText: _isObscurepassword,
+                      controller: passwordController,
                       suffixIcon: IconButton(
-                        icon: Icon(_isObscurepassword
-                            ? Icons.visibility
-                            : Icons.visibility_off),
-                        onPressed: () {
-                          setState(() {
-                            _isObscurepassword = !_isObscurepassword;
-                          });
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-
-                    // Confirm password field
-                    MyTextField(
-                      controller: confirmPasswordController,
-                      hintText: 'Confirm password',
-                      obscureText: _isObscureConfirm,
-                      suffixIcon: IconButton(
-                        icon: Icon(_isObscureConfirm
-                            ? Icons.visibility
-                            : Icons.visibility_off),
-                        onPressed: () {
-                          setState(() {
-                            _isObscureConfirm = !_isObscureConfirm;
-                          });
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 25),
-
-                    // Sign Up button
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [volcanoColors[0], volcanoColors[2]],
+                        icon: Icon(
+                          _isObscurepassword
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          color: Colors.grey.shade600,
                         ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: MyButton(
-                        onTap: signUp,
-                        text: "Sign Up",
+                        onPressed: () => setState(
+                            () => _isObscurepassword = !_isObscurepassword),
                       ),
                     ),
-                    const SizedBox(height: 30),
 
-                    // Already a member? Login
+                    const SizedBox(height: 16),
+
+                    // confirm password textfield
+                    MyTextField(
+                      hintText: "Confirm password",
+                      obscureText: _isObscureConfirm,
+                      controller: confirmPasswordController,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _isObscureConfirm
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          color: Colors.grey.shade600,
+                        ),
+                        onPressed: () => setState(
+                            () => _isObscureConfirm = !_isObscureConfirm),
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // register button
+                    MyButton(
+                      text: "Register",
+                      onTap: signUp,
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // already have an account? login now
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Text(
-                          'Already a member?',
-                          style: TextStyle(color: Colors.white),
+                          "Already have an account? ",
+                          style: TextStyle(color: Colors.white, fontSize: 15),
                         ),
-                        const SizedBox(width: 5),
                         GestureDetector(
                           onTap: widget.onTap,
-                          child: Text(
-                            'Login now',
+                          child: const Text(
+                            "Login now",
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: volcanoColors[3], // Tomato
+                              color: Colors.white,
+                              decoration: TextDecoration.underline,
+                              fontSize: 15,
                             ),
                           ),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),

@@ -24,20 +24,24 @@ class MyTextField extends StatelessWidget {
         controller: controller,
         focusNode: focusNode,
         obscureText: obscureText,
+        style: const TextStyle(color: Colors.black87), // Ensure text is visible
         decoration: InputDecoration(
           enabledBorder: OutlineInputBorder(
-            borderSide:
-                BorderSide(color: Theme.of(context).colorScheme.tertiary),
+            borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
+            borderRadius: BorderRadius.circular(12),
           ),
           focusedBorder: OutlineInputBorder(
-            borderSide:
-                BorderSide(color: Theme.of(context).colorScheme.primary),
+            borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.primary, width: 2),
+            borderRadius: BorderRadius.circular(12),
           ),
-          fillColor: Theme.of(context).colorScheme.secondary,
+          fillColor: Colors.white,
           filled: true,
           hintText: hintText,
-          hintStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
-          suffixIcon: suffixIcon, // This line enables the eye icon
+          hintStyle: TextStyle(color: Colors.grey.shade500),
+          suffixIcon: suffixIcon,
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
         ),
       ),
     );
