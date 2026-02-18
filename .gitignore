@@ -37,7 +37,6 @@
 **/android/**/generated/
 **/android/gen/
 **/android/out/
-**/android/app/google-services.json
 
 # iOS related
 **/ios/Flutter/Generated.xcconfig
