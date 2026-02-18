@@ -55,4 +55,4 @@ Group 5 — Chat App Developers
 GitHub: https://github.com/joelpaulo033
 
 ---
-*Polished with ❤️ using Antigravity AI.*
+*Developed by Group 5.*
