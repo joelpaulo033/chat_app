@@ -16,6 +16,7 @@ dependencies:
   cloud_firestore: ^4.15.8
   firebase_messaging: ^14.7.19
   firebase_storage: ^11.7.0
+  flutter_image_compress: ^2.1.0
 
   # State management
   provider: ^6.1.2

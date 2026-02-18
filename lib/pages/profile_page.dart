@@ -1,4 +1,6 @@
-import 'dart:io';
+import 'dart:io' show File;
+import 'package:chat_app/services/storage/storage_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:chat_app/services/auth/auth_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -18,10 +20,14 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final User? currentUser = AuthService().getCurrentUser();
   final ImagePicker _picker = ImagePicker();
+  final StorageService _storageService = StorageService();
 
   String displayName = 'Loading...';
   String email = 'Loading...';
   String? profilePhotoUrl;
+
+  bool isUploading = false;
+  double uploadProgress = 0.0;
 
   @override
   void initState() {
@@ -31,12 +37,14 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _loadUserDetails() async {
     if (currentUser == null) return;
+
     final snapshot = await FirebaseFirestore.instance
         .collection('users')
         .doc(currentUser!.uid)
         .get();
+
     final data = snapshot.data();
-    if (data != null) {
+    if (data != null && mounted) {
       setState(() {
         final rawName = data['displayName']?.toString() ?? '';
         displayName = rawName.trim().isEmpty
@@ -54,40 +62,81 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  // ✅ Cross-platform image upload with progress
   Future<void> _pickImage() async {
+    if (currentUser == null) return;
+
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image != null && currentUser != null) {
-      try {
-        String fileName = DateTime.now().millisecondsSinceEpoch.toString();
-        Reference reference =
-            FirebaseStorage.instance.ref().child('profile_images/$fileName');
+    if (image == null) return;
 
-        await reference.putFile(File(image.path));
-        String newPhotoUrl = await reference.getDownloadURL();
+    try {
+      setState(() {
+        isUploading = true;
+        uploadProgress = 0.0;
+      });
 
-        await AuthService().updateProfilePhoto(currentUser!.uid, newPhotoUrl);
-        await currentUser!.updatePhotoURL(newPhotoUrl);
+      final String fileName =
+          '${currentUser!.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
-        setState(() {
-          profilePhotoUrl = newPhotoUrl;
-        });
+      final Reference reference =
+      FirebaseStorage.instance.ref().child('profile_images/$fileName');
 
-        _showMessage("Profile photo updated successfully!");
-      } catch (e) {
-        _showMessage("Failed to update profile photo: $e");
+      UploadTask uploadTask;
+
+      if (kIsWeb) {
+        final bytes = await image.readAsBytes();
+        uploadTask = reference.putData(
+          bytes,
+          SettableMetadata(contentType: 'image/jpeg/jpg'),
+        );
+      } else {
+        final File file = File(image.path);
+        uploadTask = reference.putFile(file);
       }
+
+      uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+        final progress = snapshot.bytesTransferred / snapshot.totalBytes;
+        if (mounted) {
+          setState(() {
+            uploadProgress = progress;
+          });
+        }
+      });
+
+      await uploadTask;
+
+      final String newPhotoUrl = await reference.getDownloadURL();
+
+      await AuthService().updateProfilePhoto(currentUser!.uid, newPhotoUrl);
+      await currentUser!.updatePhotoURL(newPhotoUrl);
+
+      if (!mounted) return;
+
+      setState(() {
+        profilePhotoUrl = newPhotoUrl;
+        isUploading = false;
+      });
+
+      _showMessage("Profile photo updated successfully!");
+    } catch (e) {
+      setState(() {
+        isUploading = false;
+      });
+      _showMessage("Failed to update profile photo: $e");
     }
   }
 
   Future<void> _editDisplayName() async {
     String newDisplayName = displayName;
+
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Edit Display Name'),
         content: TextField(
           onChanged: (value) => newDisplayName = value,
-          decoration: const InputDecoration(hintText: "Enter new display name"),
+          decoration:
+          const InputDecoration(hintText: "Enter new display name"),
         ),
         actions: [
           TextButton(
@@ -96,24 +145,25 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           TextButton(
             onPressed: () async {
-              if (currentUser != null) {
-                newDisplayName = newDisplayName.trim();
-                if (newDisplayName.isEmpty) newDisplayName = email;
+              if (currentUser == null) return;
 
-                try {
-                  await AuthService()
-                      .updateDisplayName(currentUser!.uid, newDisplayName);
+              newDisplayName = newDisplayName.trim();
+              if (newDisplayName.isEmpty) newDisplayName = email;
 
-                  if (!mounted) return;
-                  setState(() {
-                    displayName = newDisplayName;
-                  });
+              try {
+                await AuthService()
+                    .updateDisplayName(currentUser!.uid, newDisplayName);
 
-                  Navigator.pop(context);
-                  _showMessage("Names updated successfully!");
-                } catch (e) {
-                  _showMessage("Failed to update name: $e");
-                }
+                if (!mounted) return;
+
+                setState(() {
+                  displayName = newDisplayName;
+                });
+
+                Navigator.pop(context);
+                _showMessage("Name updated successfully!");
+              } catch (e) {
+                _showMessage("Failed to update name: $e");
               }
             },
             child: const Text('Save'),
@@ -137,7 +187,8 @@ class _ProfilePageState extends State<ProfilePage> {
             TextField(
               obscureText: true,
               onChanged: (value) => currentPassword = value,
-              decoration: const InputDecoration(hintText: "Current Password"),
+              decoration:
+              const InputDecoration(hintText: "Current Password"),
             ),
             const SizedBox(height: 10),
             TextField(
@@ -154,15 +205,16 @@ class _ProfilePageState extends State<ProfilePage> {
           TextButton(
             onPressed: () async {
               try {
-                // Re-authenticate user
                 final cred = EmailAuthProvider.credential(
                   email: currentUser!.email!,
                   password: currentPassword,
                 );
-                await currentUser!.reauthenticateWithCredential(cred);
 
+                await currentUser!.reauthenticateWithCredential(cred);
                 await currentUser!.updatePassword(newPassword);
+
                 if (!mounted) return;
+
                 Navigator.pop(context);
                 _showMessage("Password updated successfully!");
               } catch (e) {
@@ -180,6 +232,7 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       await AuthService().signOut();
       if (!mounted) return;
+
       _showMessage("Logged out successfully!");
       Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
@@ -189,206 +242,130 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: const Text("Profile",
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
-        centerTitle: false,
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        scrolledUnderElevation: 0,
       ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
+          padding:
+          const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Profile Picture
               Stack(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primary
-                              .withOpacity(0.2),
-                          width: 2),
-                    ),
-                    child: CircleAvatar(
-                      radius: 70,
-                      backgroundColor: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withOpacity(0.1),
-                      backgroundImage: (profilePhotoUrl != null &&
-                              profilePhotoUrl!.isNotEmpty)
-                          ? NetworkImage(profilePhotoUrl!)
-                          : null,
-                      child:
-                          (profilePhotoUrl == null || profilePhotoUrl!.isEmpty)
-                              ? Icon(Icons.person,
-                                  size: 70,
-                                  color: Theme.of(context).colorScheme.primary)
-                              : null,
+                  ClipOval(
+                    child: SizedBox(
+                      width: 140,
+                      height: 140,
+                      child: profilePhotoUrl != null && profilePhotoUrl!.isNotEmpty
+                          ? Image.network(
+                        profilePhotoUrl!,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return Center(
+                            child: CircularProgressIndicator(
+                              value: progress.expectedTotalBytes != null
+                                  ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
+                                  : null,
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey.shade200,
+                            child: const Icon(Icons.person, size: 70, color: Colors.grey),
+                          );
+                        },
+                      )
+                          : Container(
+                        color: Colors.grey.shade200,
+                        child: const Icon(Icons.person, size: 70, color: Colors.grey),
+                      ),
                     ),
                   ),
                   Positioned(
-                    bottom: 4,
-                    right: 4,
+                    bottom: 0,
+                    right: 0,
                     child: CircleAvatar(
                       backgroundColor: Theme.of(context).colorScheme.primary,
-                      radius: 20,
                       child: IconButton(
-                        padding: EdgeInsets.zero,
-                        icon: const Icon(Icons.camera_alt,
-                            color: Colors.white, size: 20),
+                        icon: const Icon(Icons.camera_alt, color: Colors.white),
                         onPressed: _pickImage,
                       ),
                     ),
-                  )
+                  ),
                 ],
               ),
+
+              // ✅ Progress Indicator for upload
+              if (isUploading)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Column(
+                    children: [
+                      LinearProgressIndicator(value: uploadProgress),
+                      const SizedBox(height: 6),
+                      Text("${(uploadProgress * 100).toStringAsFixed(0)}%"),
+                    ],
+                  ),
+                ),
+
+              const SizedBox(height: 20),
+              Text(displayName,
+                  style: const TextStyle(
+                      fontSize: 22, fontWeight: FontWeight.bold)),
+              Text(email),
               const SizedBox(height: 30),
 
-              // Display Name
-              Text(
-                displayName,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 4),
-
-              // Email
-              Text(
-                email,
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 40),
-
-              // Account Controls
-              Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .tertiary
-                          .withOpacity(0.1)),
-                ),
-                child: Column(
-                  children: [
-                    // Theme Toggle
-                    _buildThemeTile(),
-                    _buildDivider(),
-                    _buildProfileOption(
-                      icon: Icons.person_outline,
-                      title: "Edit Name",
-                      onTap: _editDisplayName,
-                    ),
-                    _buildDivider(),
-                    _buildProfileOption(
-                      icon: Icons.lock_outline,
-                      title: "Change Password",
-                      onTap: _changePassword,
-                    ),
-                    _buildDivider(),
-                    _buildProfileOption(
-                      icon: Icons.logout,
-                      title: "Logout",
-                      onTap: _logout,
-                      isDestructive: true,
-                    ),
+              // Theme
+              ListTile(
+                leading: Icon(themeProvider.isDarkMode
+                    ? Icons.dark_mode
+                    : Icons.light_mode),
+                title: const Text("Theme"),
+                trailing: DropdownButton<ThemeMode>(
+                  value: themeProvider.themeMode,
+                  onChanged: (mode) {
+                    if (mode != null) {
+                      themeProvider.setThemeMode(mode);
+                    }
+                  },
+                  items: const [
+                    DropdownMenuItem(value: ThemeMode.system, child: Text("System")),
+                    DropdownMenuItem(value: ThemeMode.light, child: Text("Light")),
+                    DropdownMenuItem(value: ThemeMode.dark, child: Text("Dark")),
                   ],
                 ),
+              ),
+
+              // Profile actions
+              ListTile(
+                leading: const Icon(Icons.person),
+                title: const Text("Edit Name"),
+                onTap: _editDisplayName,
+              ),
+              ListTile(
+                leading: const Icon(Icons.lock),
+                title: const Text("Change Password"),
+                onTap: _changePassword,
+              ),
+              ListTile(
+                leading: const Icon(Icons.logout, color: Colors.red),
+                title: const Text("Logout", style: TextStyle(color: Colors.red)),
+                onTap: _logout,
               ),
             ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildThemeTile() {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    return ListTile(
-      leading: Icon(
-        themeProvider.isDarkMode
-            ? Icons.dark_mode_outlined
-            : Icons.light_mode_outlined,
-        color: Theme.of(context).colorScheme.primary,
-      ),
-      title: const Text(
-        "App Theme",
-        style: TextStyle(fontWeight: FontWeight.w500),
-      ),
-      subtitle: Text(
-        themeProvider.themeMode == ThemeMode.system
-            ? "Following System"
-            : (themeProvider.isDarkMode ? "Dark Mode" : "Light Mode"),
-        style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-      ),
-      trailing: DropdownButton<ThemeMode>(
-        value: themeProvider.themeMode,
-        underline: const SizedBox(),
-        onChanged: (ThemeMode? newMode) {
-          if (newMode != null) {
-            themeProvider.setThemeMode(newMode);
-          }
-        },
-        items: const [
-          DropdownMenuItem(value: ThemeMode.system, child: Text("System")),
-          DropdownMenuItem(value: ThemeMode.light, child: Text("Light")),
-          DropdownMenuItem(value: ThemeMode.dark, child: Text("Dark")),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProfileOption({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-    bool isDestructive = false,
-  }) {
-    return ListTile(
-      leading: Icon(
-        icon,
-        color:
-            isDestructive ? Colors.red : Theme.of(context).colorScheme.primary,
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontWeight: FontWeight.w500,
-          color: isDestructive
-              ? Colors.red
-              : Theme.of(context).colorScheme.onSurface,
-        ),
-      ),
-      trailing: const Icon(Icons.chevron_right, size: 20),
-      onTap: onTap,
-    );
-  }
-
-  Widget _buildDivider() {
-    return Divider(
-      height: 1,
-      thickness: 1,
-      indent: 60,
-      color: Theme.of(context).colorScheme.tertiary.withOpacity(0.1),
     );
   }
 }
