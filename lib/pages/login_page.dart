@@ -146,7 +146,7 @@ class _LoginPageState extends State<LoginPage> {
                     Text(
                       "Let's Chat",
                       style: TextStyle(
-                        fontSize: 34,
+                        fontSize: 35,
                         fontWeight: FontWeight.bold,
                         foreground: Paint()
                           ..shader = const LinearGradient(
@@ -170,7 +170,8 @@ class _LoginPageState extends State<LoginPage> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.white70,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
 
@@ -214,7 +215,7 @@ class _LoginPageState extends State<LoginPage> {
                         child: const Text(
                           "Forgot Password?",
                           style: TextStyle(
-                            color: Colors.yellowAccent,
+                            color: Colors.white,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -229,7 +230,7 @@ class _LoginPageState extends State<LoginPage> {
                       text: "Sign In",
                     ),
 
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 25),
 
                     // ===== REGISTER LINK =====
                     Row(
@@ -237,7 +238,7 @@ class _LoginPageState extends State<LoginPage> {
                       children: [
                         const Text(
                           'Not a member?',
-                          style: TextStyle(color: Colors.white70),
+                          style: TextStyle(color: Colors.white),
                         ),
                         const SizedBox(width: 5),
                         GestureDetector(
