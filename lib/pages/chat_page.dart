@@ -78,7 +78,7 @@ class _ChatPageState extends State<ChatPage> {
                       : Theme.of(context)
                           .colorScheme
                           .onSurface
-                          .withOpacity(0.6),
+                          .withValues(alpha: 0.6),
                 ),
                 onPressed: () => _chatService.toggleFavorite(widget.receiverID),
               );
@@ -87,8 +87,10 @@ class _ChatPageState extends State<ChatPage> {
         if (widget.isGroup)
           IconButton(
             icon: Icon(Icons.info_outline_rounded,
-                color:
-                    Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.6)),
             onPressed: () {
               Navigator.push(
                 context,
@@ -103,7 +105,10 @@ class _ChatPageState extends State<ChatPage> {
           ),
         IconButton(
           icon: Icon(Icons.more_vert,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.6)),
           onPressed: _openDeleteOptions,
         ),
       ],
@@ -129,10 +134,10 @@ class _ChatPageState extends State<ChatPage> {
           children: [
             CircleAvatar(
               radius: 18,
-              backgroundColor:
-                  (profilePhotoUrl == null || profilePhotoUrl.isEmpty)
-                      ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
-                      : null,
+              backgroundColor: (profilePhotoUrl == null ||
+                      profilePhotoUrl.isEmpty)
+                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
+                  : null,
               backgroundImage:
                   (profilePhotoUrl != null && profilePhotoUrl.isNotEmpty)
                       ? NetworkImage(profilePhotoUrl)
@@ -175,7 +180,7 @@ class _ChatPageState extends State<ChatPage> {
                             : Theme.of(context)
                                 .colorScheme
                                 .onSurface
-                                .withOpacity(0.5),
+                                .withValues(alpha: 0.5),
                       ),
                     ),
                   ],
@@ -194,7 +199,7 @@ class _ChatPageState extends State<ChatPage> {
         CircleAvatar(
           radius: 18,
           backgroundColor:
-              Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
           child: Icon(Icons.group_rounded,
               color: Theme.of(context).colorScheme.primary, size: 20),
         ),
@@ -215,7 +220,10 @@ class _ChatPageState extends State<ChatPage> {
               "Group Chat",
               style: TextStyle(
                 fontSize: 11,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.5),
               ),
             ),
           ],
@@ -387,7 +395,7 @@ class _ChatPageState extends State<ChatPage> {
                           _authService.getCurrentUser()!.uid, users[index].id);
                       await _chatService.forwardMessage(
                           targetChatId, message, false);
-                      if (!mounted) return;
+                      if (!context.mounted) return;
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text("Message forwarded")));
@@ -410,8 +418,10 @@ class _ChatPageState extends State<ChatPage> {
         color: Theme.of(context).colorScheme.surface,
         border: Border(
             top: BorderSide(
-                color:
-                    Theme.of(context).colorScheme.tertiary.withOpacity(0.1))),
+                color: Theme.of(context)
+                    .colorScheme
+                    .tertiary
+                    .withValues(alpha: 0.1))),
       ),
       child: SafeArea(
         child: Row(
@@ -419,8 +429,10 @@ class _ChatPageState extends State<ChatPage> {
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color:
-                      Theme.of(context).colorScheme.tertiary.withOpacity(0.5),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .tertiary
+                      .withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(24),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 16),

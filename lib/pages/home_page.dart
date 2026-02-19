@@ -144,12 +144,41 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(width: 4),
             GestureDetector(
               onTap: () => setState(() => _selectedIndex = 2),
-              child: CircleAvatar(
-                radius: 18,
-                backgroundColor:
-                    Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                child: Icon(Icons.person,
-                    color: Theme.of(context).colorScheme.primary, size: 20),
+              child: StreamBuilder<DocumentSnapshot>(
+                stream: _firestore
+                    .collection('users')
+                    .doc(_authService.getCurrentUser()?.uid)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  String? photoUrl;
+                  String initial = '?';
+                  if (snapshot.hasData && snapshot.data!.exists) {
+                    final data = snapshot.data!.data() as Map<String, dynamic>;
+                    photoUrl = data['profilePhotoUrl'];
+                    final name = data['displayName'] ?? data['email'] ?? '';
+                    if (name.isNotEmpty) initial = name[0].toUpperCase();
+                  }
+
+                  return CircleAvatar(
+                    key: ValueKey(photoUrl), // Force refresh
+                    radius: 18,
+                    backgroundColor:
+                        Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                    backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
+                        ? NetworkImage(photoUrl)
+                        : null,
+                    child: (photoUrl == null || photoUrl.isEmpty)
+                        ? Text(
+                            initial,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          )
+                        : null,
+                  );
+                },
               ),
             ),
           ],
@@ -178,7 +207,7 @@ class _HomePageState extends State<HomePage> {
                 if (val) setState(() => _activeFilter = filter);
               },
               selectedColor:
-                  Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
               labelStyle: TextStyle(
                 color: isActive
                     ? Theme.of(context).colorScheme.primary
@@ -186,7 +215,7 @@ class _HomePageState extends State<HomePage> {
                 fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
               ),
               backgroundColor:
-                  Theme.of(context).colorScheme.tertiary.withOpacity(0.5),
+                  Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.5),
               side: BorderSide.none,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20)),
@@ -434,7 +463,7 @@ class _HomePageState extends State<HomePage> {
         leading: CircleAvatar(
           radius: 28,
           backgroundColor:
-              Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
           child: Icon(Icons.group_rounded,
               color: Theme.of(context).colorScheme.primary, size: 28),
         ),
@@ -450,7 +479,7 @@ class _HomePageState extends State<HomePage> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
               fontSize: 14),
         ),
         trailing: _buildTimestamp(chatData['lastMessageTimestamp']),
@@ -492,7 +521,7 @@ class _HomePageState extends State<HomePage> {
               CircleAvatar(
                 radius: 28,
                 backgroundColor:
-                    Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                    Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                 backgroundImage: (userData['profilePhotoUrl'] != null &&
                         userData['profilePhotoUrl'].toString().isNotEmpty)
                     ? NetworkImage(userData['profilePhotoUrl'])
@@ -538,7 +567,7 @@ class _HomePageState extends State<HomePage> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                 fontSize: 14),
           ),
           trailing: _buildTimestamp(chatData['lastMessageTimestamp']),
@@ -562,7 +591,7 @@ class _HomePageState extends State<HomePage> {
         Text(
           dateString,
           style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
               fontSize: 12),
         ),
         const SizedBox(height: 4),

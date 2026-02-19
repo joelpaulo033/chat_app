@@ -1,7 +1,7 @@
 import 'package:chat_app/firebase_options.dart';
 import 'package:chat_app/services/auth/auth_gate.dart';
 import 'package:chat_app/services/auth/auth_service.dart';
-import 'package:chat_app/services/chat/firebase_api.dart';
+import 'package:chat_app/services/notifications/firebase_api.dart';
 import 'package:chat_app/theme/light_mode.dart';
 import 'package:chat_app/theme/dark_mode.dart';
 import 'package:chat_app/theme/theme_provider.dart';

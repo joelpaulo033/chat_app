@@ -27,7 +27,7 @@ class MyTextField extends StatelessWidget {
         style: const TextStyle(color: Colors.black87), // Ensure text is visible
         decoration: InputDecoration(
           enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5)),
             borderRadius: BorderRadius.circular(12),
           ),
           focusedBorder: OutlineInputBorder(

@@ -32,9 +32,10 @@ class UserTile extends StatelessWidget {
             Stack(
               children: [
                 CircleAvatar(
+                  key: ValueKey(profilePhotoUrl),
                   radius: 28,
                   backgroundColor:
-                      Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                   backgroundImage:
                       (profilePhotoUrl != null && profilePhotoUrl!.isNotEmpty)
                           ? NetworkImage(profilePhotoUrl!)

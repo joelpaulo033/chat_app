@@ -1,10 +1,7 @@
-import 'dart:io' show File;
-import 'package:chat_app/services/storage/storage_service.dart';
-import 'package:flutter/foundation.dart';
 import 'package:chat_app/services/auth/auth_service.dart';
+import 'package:chat_app/services/storage/storage_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:chat_app/theme/theme_provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -62,7 +59,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // ✅ Cross-platform image upload with progress
+  // ✅ Refined cross-platform image upload using StorageService
   Future<void> _pickImage() async {
     if (currentUser == null) return;
 
@@ -75,38 +72,20 @@ class _ProfilePageState extends State<ProfilePage> {
         uploadProgress = 0.0;
       });
 
-      final String fileName =
-          '${currentUser!.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      // Use the centralized StorageService
+      final String newPhotoUrl = await _storageService.uploadProfileImage(
+        image: image,
+        uid: currentUser!.uid,
+        onProgress: (progress) {
+          if (mounted) {
+            setState(() {
+              uploadProgress = progress;
+            });
+          }
+        },
+      );
 
-      final Reference reference =
-      FirebaseStorage.instance.ref().child('profile_images/$fileName');
-
-      UploadTask uploadTask;
-
-      if (kIsWeb) {
-        final bytes = await image.readAsBytes();
-        uploadTask = reference.putData(
-          bytes,
-          SettableMetadata(contentType: 'image/jpeg/jpg'),
-        );
-      } else {
-        final File file = File(image.path);
-        uploadTask = reference.putFile(file);
-      }
-
-      uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-        final progress = snapshot.bytesTransferred / snapshot.totalBytes;
-        if (mounted) {
-          setState(() {
-            uploadProgress = progress;
-          });
-        }
-      });
-
-      await uploadTask;
-
-      final String newPhotoUrl = await reference.getDownloadURL();
-
+      // Update Firestore and Local User Profile
       await AuthService().updateProfilePhoto(currentUser!.uid, newPhotoUrl);
       await currentUser!.updatePhotoURL(newPhotoUrl);
 
@@ -119,9 +98,11 @@ class _ProfilePageState extends State<ProfilePage> {
 
       _showMessage("Profile photo updated successfully!");
     } catch (e) {
-      setState(() {
-        isUploading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isUploading = false;
+        });
+      }
       _showMessage("Failed to update profile photo: $e");
     }
   }
@@ -135,8 +116,7 @@ class _ProfilePageState extends State<ProfilePage> {
         title: const Text('Edit Display Name'),
         content: TextField(
           onChanged: (value) => newDisplayName = value,
-          decoration:
-          const InputDecoration(hintText: "Enter new display name"),
+          decoration: const InputDecoration(hintText: "Enter new display name"),
         ),
         actions: [
           TextButton(
@@ -154,7 +134,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 await AuthService()
                     .updateDisplayName(currentUser!.uid, newDisplayName);
 
-                if (!mounted) return;
+                if (!context.mounted) return;
 
                 setState(() {
                   displayName = newDisplayName;
@@ -163,6 +143,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 Navigator.pop(context);
                 _showMessage("Name updated successfully!");
               } catch (e) {
+                if (!context.mounted) return;
                 _showMessage("Failed to update name: $e");
               }
             },
@@ -187,8 +168,7 @@ class _ProfilePageState extends State<ProfilePage> {
             TextField(
               obscureText: true,
               onChanged: (value) => currentPassword = value,
-              decoration:
-              const InputDecoration(hintText: "Current Password"),
+              decoration: const InputDecoration(hintText: "Current Password"),
             ),
             const SizedBox(height: 10),
             TextField(
@@ -213,11 +193,12 @@ class _ProfilePageState extends State<ProfilePage> {
                 await currentUser!.reauthenticateWithCredential(cred);
                 await currentUser!.updatePassword(newPassword);
 
-                if (!mounted) return;
+                if (!context.mounted) return;
 
                 Navigator.pop(context);
                 _showMessage("Password updated successfully!");
               } catch (e) {
+                if (!context.mounted) return;
                 _showMessage("Failed to update password: $e");
               }
             },
@@ -254,8 +235,7 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
       body: Center(
         child: SingleChildScrollView(
-          padding:
-          const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
           child: Column(
             children: [
               Stack(
@@ -264,31 +244,37 @@ class _ProfilePageState extends State<ProfilePage> {
                     child: SizedBox(
                       width: 140,
                       height: 140,
-                      child: profilePhotoUrl != null && profilePhotoUrl!.isNotEmpty
+                      child: profilePhotoUrl != null &&
+                              profilePhotoUrl!.isNotEmpty
                           ? Image.network(
-                        profilePhotoUrl!,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, progress) {
-                          if (progress == null) return child;
-                          return Center(
-                            child: CircularProgressIndicator(
-                              value: progress.expectedTotalBytes != null
-                                  ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
-                                  : null,
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey.shade200,
-                            child: const Icon(Icons.person, size: 70, color: Colors.grey),
-                          );
-                        },
-                      )
+                              profilePhotoUrl!,
+                              key: ValueKey(profilePhotoUrl), // Force refresh
+                              fit: BoxFit.cover,
+                              loadingBuilder: (context, child, progress) {
+                                if (progress == null) return child;
+                                return Center(
+                                  child: CircularProgressIndicator(
+                                    value: progress.expectedTotalBytes != null
+                                        ? progress.cumulativeBytesLoaded /
+                                            progress.expectedTotalBytes!
+                                        : null,
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                debugPrint("❌ Profile Image Error: $error");
+                                return Container(
+                                  color: Colors.grey.shade200,
+                                  child: const Icon(Icons.person,
+                                      size: 70, color: Colors.grey),
+                                );
+                              },
+                            )
                           : Container(
-                        color: Colors.grey.shade200,
-                        child: const Icon(Icons.person, size: 70, color: Colors.grey),
-                      ),
+                              color: Colors.grey.shade200,
+                              child: const Icon(Icons.person,
+                                  size: 70, color: Colors.grey),
+                            ),
                     ),
                   ),
                   Positioned(
@@ -339,9 +325,12 @@ class _ProfilePageState extends State<ProfilePage> {
                     }
                   },
                   items: const [
-                    DropdownMenuItem(value: ThemeMode.system, child: Text("System")),
-                    DropdownMenuItem(value: ThemeMode.light, child: Text("Light")),
-                    DropdownMenuItem(value: ThemeMode.dark, child: Text("Dark")),
+                    DropdownMenuItem(
+                        value: ThemeMode.system, child: Text("System")),
+                    DropdownMenuItem(
+                        value: ThemeMode.light, child: Text("Light")),
+                    DropdownMenuItem(
+                        value: ThemeMode.dark, child: Text("Dark")),
                   ],
                 ),
               ),
@@ -359,7 +348,8 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               ListTile(
                 leading: const Icon(Icons.logout, color: Colors.red),
-                title: const Text("Logout", style: TextStyle(color: Colors.red)),
+                title:
+                    const Text("Logout", style: TextStyle(color: Colors.red)),
                 onTap: _logout,
               ),
             ],

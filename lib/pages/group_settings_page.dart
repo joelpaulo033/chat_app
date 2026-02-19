@@ -27,8 +27,9 @@ class _GroupSettingsPageState extends State<GroupSettingsPage> {
       builder: (context) => StreamBuilder<List<Map<String, dynamic>>>(
         stream: _authService.getUsersStream(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData)
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
+          }
 
           final currentUser = _authService.getCurrentUser();
           final users = snapshot.data!
@@ -117,8 +118,9 @@ class _GroupSettingsPageState extends State<GroupSettingsPage> {
             .doc(widget.chatId)
             .snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData)
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
+          }
 
           final data = snapshot.data!.data() as Map<String, dynamic>;
           final participants = List<String>.from(data['participants'] ?? []);
@@ -131,8 +133,10 @@ class _GroupSettingsPageState extends State<GroupSettingsPage> {
               const SizedBox(height: 20),
               CircleAvatar(
                 radius: 50,
-                backgroundColor:
-                    Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                backgroundColor: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.1),
                 child: Icon(Icons.group_rounded,
                     size: 50, color: Theme.of(context).colorScheme.primary),
               ),

@@ -113,6 +113,13 @@ class AuthService extends ChangeNotifier {
     });
   }
 
+  /// ================= UPDATE FCM TOKEN =================
+  Future<void> updateFcmToken(String uid, String token) async {
+    await _firestore.collection('users').doc(uid).update({
+      'fcmToken': token,
+    });
+  }
+
   /// ================= AUTH ERROR HANDLER =================
   String _handleAuthError(FirebaseAuthException e) {
     switch (e.code) {

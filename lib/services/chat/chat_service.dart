@@ -36,6 +36,7 @@ class ChatService {
     Map<String, dynamic> updateData = {
       'lastMessage': message,
       'lastMessageTimestamp': timestamp,
+      'lastSenderId': senderID,
       'isGroup': isGroup,
     };
 
@@ -72,6 +73,7 @@ class ChatService {
     await _firestore.collection('chats').doc(targetChatId).set({
       'lastMessage': message,
       'lastMessageTimestamp': timestamp,
+      'lastSenderId': senderID,
       'isGroup': isGroup,
     }, SetOptions(merge: true));
   }

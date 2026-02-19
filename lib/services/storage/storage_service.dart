@@ -1,8 +1,6 @@
 import 'dart:io' show File;
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class StorageService {
@@ -33,24 +31,25 @@ class StorageService {
           '${uid}_${DateTime.now().millisecondsSinceEpoch}.$extension';
 
       final Reference reference =
-      _storage.ref().child('profile_images/$uid/$fileName');
+          _storage.ref().child('profile_images/$uid/$fileName');
 
       UploadTask uploadTask;
 
       if (kIsWeb) {
-        Uint8List bytes = await image.readAsBytes();
+        final Uint8List bytes = await image.readAsBytes();
+        final String mimeType = extension == 'jpg' || extension == 'jpeg'
+            ? 'image/jpeg'
+            : 'image/png';
 
-        // Optional compression for web
         uploadTask = reference.putData(
           bytes,
-          SettableMetadata(contentType: 'image/$extension'),
+          SettableMetadata(contentType: mimeType),
         );
       } else {
-        File file = File(image.path);
+        final File file = File(image.path);
 
         // Compress image on mobile
-        final compressedBytes =
-        await FlutterImageCompress.compressWithFile(
+        final compressedBytes = await FlutterImageCompress.compressWithFile(
           file.absolute.path,
           quality: 70,
         );
@@ -59,17 +58,20 @@ class StorageService {
           throw Exception("Compression failed");
         }
 
+        final String mimeType = extension == 'jpg' || extension == 'jpeg'
+            ? 'image/jpeg'
+            : 'image/png';
+
         uploadTask = reference.putData(
           compressedBytes,
-          SettableMetadata(contentType: 'image/$extension'),
+          SettableMetadata(contentType: mimeType),
         );
       }
 
       // Track progress
       uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
         if (onProgress != null) {
-          double progress =
-              snapshot.bytesTransferred / snapshot.totalBytes;
+          double progress = snapshot.bytesTransferred / snapshot.totalBytes;
           onProgress(progress);
         }
       });
