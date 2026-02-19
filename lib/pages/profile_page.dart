@@ -245,36 +245,36 @@ class _ProfilePageState extends State<ProfilePage> {
                       width: 140,
                       height: 140,
                       child: profilePhotoUrl != null &&
-                              profilePhotoUrl!.isNotEmpty
+                          profilePhotoUrl!.isNotEmpty
                           ? Image.network(
-                              profilePhotoUrl!,
-                              key: ValueKey(profilePhotoUrl), // Force refresh
-                              fit: BoxFit.cover,
-                              loadingBuilder: (context, child, progress) {
-                                if (progress == null) return child;
-                                return Center(
-                                  child: CircularProgressIndicator(
-                                    value: progress.expectedTotalBytes != null
-                                        ? progress.cumulativeBytesLoaded /
-                                            progress.expectedTotalBytes!
-                                        : null,
-                                  ),
-                                );
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                debugPrint("❌ Profile Image Error: $error");
-                                return Container(
-                                  color: Colors.grey.shade200,
-                                  child: const Icon(Icons.person,
-                                      size: 70, color: Colors.grey),
-                                );
-                              },
-                            )
-                          : Container(
-                              color: Colors.grey.shade200,
-                              child: const Icon(Icons.person,
-                                  size: 70, color: Colors.grey),
+                        profilePhotoUrl!,
+                        key: ValueKey(profilePhotoUrl), // Force refresh
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return Center(
+                            child: CircularProgressIndicator(
+                              value: progress.expectedTotalBytes != null
+                                  ? progress.cumulativeBytesLoaded /
+                                  progress.expectedTotalBytes!
+                                  : null,
                             ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          debugPrint("❌ Profile Image Error: $error");
+                          return Container(
+                            color: Colors.grey.shade200,
+                            child: const Icon(Icons.person,
+                                size: 70, color: Colors.grey),
+                          );
+                        },
+                      )
+                          : Container(
+                        color: Colors.grey.shade200,
+                        child: const Icon(Icons.person,
+                            size: 70, color: Colors.grey),
+                      ),
                     ),
                   ),
                   Positioned(
@@ -349,7 +349,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ListTile(
                 leading: const Icon(Icons.logout, color: Colors.red),
                 title:
-                    const Text("Logout", style: TextStyle(color: Colors.red)),
+                const Text("Logout", style: TextStyle(color: Colors.red)),
                 onTap: _logout,
               ),
             ],
