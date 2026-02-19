@@ -1,9 +1,11 @@
 import 'package:chat_app/pages/home_page.dart';
 import 'package:chat_app/services/auth/auth_service.dart';
-import 'package:chat_app/components/my_button.dart';
 import 'package:chat_app/components/my_textfield.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+// Import the glow button
+import '../components/my_button.dart';
 
 class LoginPage extends StatefulWidget {
   final void Function()? onTap;
@@ -104,7 +106,7 @@ class _LoginPageState extends State<LoginPage> {
           child: Center(
             child: SingleChildScrollView(
               padding:
-                  const EdgeInsets.symmetric(horizontal: 20.0, vertical: 40),
+              const EdgeInsets.symmetric(horizontal: 20.0, vertical: 40),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 500),
                 child: Column(
@@ -116,7 +118,7 @@ class _LoginPageState extends State<LoginPage> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
+                            color: Colors.black.withOpacity(0.2),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -219,7 +221,7 @@ class _LoginPageState extends State<LoginPage> {
 
                     const SizedBox(height: 32),
 
-                    // ===== SIGN IN BUTTON =====
+                    // ===== SIGN IN BUTTON WITH GLOW =====
                     MyButton(
                       onTap: signIn,
                       text: "Sign In",
