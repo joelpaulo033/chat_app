@@ -4,6 +4,7 @@ import 'package:chat_app/services/auth/auth_service.dart';
 import 'package:chat_app/services/chat/chat_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 class ChatPage extends StatefulWidget {
@@ -302,11 +303,14 @@ class _ChatPageState extends State<ChatPage> {
             mainAxisAlignment:
                 isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
             children: [
-              ChatBubble(
-                message: data['message'],
-                isCurrentUser: isMe,
-                isForwarded: isForwarded,
-                onLongPress: () => _onMessageLongPress(doc.id, data['message']),
+              Flexible(
+                child: ChatBubble(
+                  message: data['message'],
+                  isCurrentUser: isMe,
+                  isForwarded: isForwarded,
+                  onLongPress: () =>
+                      _onMessageLongPress(doc.id, data['message']),
+                ),
               ),
             ],
           ),
@@ -332,6 +336,17 @@ class _ChatPageState extends State<ChatPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: 12),
+          ListTile(
+            leading: const Icon(Icons.copy_rounded, color: Colors.green),
+            title: const Text('Copy Message'),
+            onTap: () async {
+              Navigator.pop(context);
+              await Clipboard.setData(ClipboardData(text: messageContent));
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Message copied to clipboard")));
+            },
+          ),
           ListTile(
             leading: const Icon(Icons.forward_rounded, color: Colors.blue),
             title: const Text('Forward Message'),

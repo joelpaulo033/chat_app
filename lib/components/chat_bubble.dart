@@ -43,6 +43,9 @@ class ChatBubble extends StatelessWidget {
               ),
             ),
           Container(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.75,
+            ),
             decoration: BoxDecoration(
               gradient: isCurrentUser
                   ? const LinearGradient(
