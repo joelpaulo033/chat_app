@@ -47,13 +47,13 @@ class _HomePageState extends State<HomePage> {
       // 4. Floating Action Button (Volcano style)
       floatingActionButton: _selectedIndex != 2
           ? FloatingActionButton(
-              onPressed: () {
-                setState(() => _selectedIndex = 1); // Switch to People
-              },
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              child: const Icon(Icons.add_comment_rounded),
-            )
+        onPressed: () {
+          setState(() => _selectedIndex = 1); // Switch to People
+        },
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16)),
+        child: const Icon(Icons.add_comment_rounded),
+      )
           : null,
       // 5. Modern Bottom Nav
       bottomNavigationBar: Container(
@@ -127,7 +127,7 @@ class _HomePageState extends State<HomePage> {
           if (!_isSearching) const Spacer(),
           IconButton(
             icon:
-                Icon(_isSearching ? Icons.close_rounded : Icons.search_rounded),
+            Icon(_isSearching ? Icons.close_rounded : Icons.search_rounded),
             onPressed: () {
               setState(() {
                 if (_isSearching) {
@@ -147,7 +147,7 @@ class _HomePageState extends State<HomePage> {
               child: CircleAvatar(
                 radius: 18,
                 backgroundColor:
-                    Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                Theme.of(context).colorScheme.primary.withOpacity(0.1),
                 child: Icon(Icons.person,
                     color: Theme.of(context).colorScheme.primary, size: 20),
               ),
@@ -178,7 +178,7 @@ class _HomePageState extends State<HomePage> {
                 if (val) setState(() => _activeFilter = filter);
               },
               selectedColor:
-                  Theme.of(context).colorScheme.primary.withOpacity(0.2),
+              Theme.of(context).colorScheme.primary.withOpacity(0.2),
               labelStyle: TextStyle(
                 color: isActive
                     ? Theme.of(context).colorScheme.primary
@@ -186,7 +186,7 @@ class _HomePageState extends State<HomePage> {
                 fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
               ),
               backgroundColor:
-                  Theme.of(context).colorScheme.tertiary.withOpacity(0.5),
+              Theme.of(context).colorScheme.tertiary.withOpacity(0.5),
               side: BorderSide.none,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20)),
@@ -244,9 +244,9 @@ class _HomePageState extends State<HomePage> {
               final users = snapshot.data!
                   .where((u) => u['uid'] != currentUser?.uid)
                   .where((u) => (u['displayName'] ?? u['email'] ?? '')
-                      .toString()
-                      .toLowerCase()
-                      .contains(_searchQuery.toLowerCase()))
+                  .toString()
+                  .toLowerCase()
+                  .contains(_searchQuery.toLowerCase()))
                   .toList();
 
               return ListView.builder(
@@ -305,7 +305,7 @@ class _HomePageState extends State<HomePage> {
                 List favorites = [];
                 if (userSnapshot.hasData && userSnapshot.data!.exists) {
                   favorites = (userSnapshot.data!.data()
-                          as Map<String, dynamic>)['favorites'] ??
+                  as Map<String, dynamic>)['favorites'] ??
                       [];
                 }
 
@@ -329,7 +329,7 @@ class _HomePageState extends State<HomePage> {
 
                       // 1. Get search targets
                       final lastMsg =
-                          (data['lastMessage'] ?? '').toString().toLowerCase();
+                      (data['lastMessage'] ?? '').toString().toLowerCase();
                       String targetName = '';
 
                       if (isGroup) {
@@ -337,9 +337,9 @@ class _HomePageState extends State<HomePage> {
                             (data['groupName'] ?? '').toString().toLowerCase();
                       } else {
                         final participants =
-                            List<String>.from(data['participants'] ?? []);
+                        List<String>.from(data['participants'] ?? []);
                         final otherUserId = participants.firstWhere(
-                            (id) => id != currentUser.uid,
+                                (id) => id != currentUser.uid,
                             orElse: () => '');
                         targetName =
                             (userNameMap[otherUserId] ?? '').toLowerCase();
@@ -358,9 +358,9 @@ class _HomePageState extends State<HomePage> {
                         if (isGroup)
                           return false; // Groups usually not favorites in this logic
                         final participants =
-                            List<String>.from(data['participants'] ?? []);
+                        List<String>.from(data['participants'] ?? []);
                         final otherUserId = participants.firstWhere(
-                            (id) => id != currentUser.uid,
+                                (id) => id != currentUser.uid,
                             orElse: () => '');
                         return matchesSearch && favorites.contains(otherUserId);
                       }
@@ -371,9 +371,9 @@ class _HomePageState extends State<HomePage> {
                     // Sort client-side
                     chatDocs.sort((a, b) {
                       final aTime = (a.data()
-                          as Map<String, dynamic>)['lastMessageTimestamp'];
+                      as Map<String, dynamic>)['lastMessageTimestamp'];
                       final bTime = (b.data()
-                          as Map<String, dynamic>)['lastMessageTimestamp'];
+                      as Map<String, dynamic>)['lastMessageTimestamp'];
                       if (aTime == null) return 1;
                       if (bTime == null) return -1;
                       return bTime.compareTo(aTime);
@@ -401,7 +401,7 @@ class _HomePageState extends State<HomePage> {
                       itemCount: chatDocs.length,
                       itemBuilder: (context, index) {
                         final chatData =
-                            chatDocs[index].data() as Map<String, dynamic>;
+                        chatDocs[index].data() as Map<String, dynamic>;
                         return _buildChatTile(
                             chatData, currentUser.uid, chatDocs[index].id);
                       },
@@ -432,7 +432,7 @@ class _HomePageState extends State<HomePage> {
         leading: CircleAvatar(
           radius: 28,
           backgroundColor:
-              Theme.of(context).colorScheme.primary.withOpacity(0.1),
+          Theme.of(context).colorScheme.primary.withOpacity(0.1),
           child: Icon(Icons.group_rounded,
               color: Theme.of(context).colorScheme.primary, size: 28),
         ),
@@ -457,7 +457,7 @@ class _HomePageState extends State<HomePage> {
 
     final participants = List<String>.from(chatData['participants'] ?? []);
     final otherUserId =
-        participants.firstWhere((id) => id != currentUserId, orElse: () => '');
+    participants.firstWhere((id) => id != currentUserId, orElse: () => '');
 
     return StreamBuilder<DocumentSnapshot>(
       stream: _firestore.collection('users').doc(otherUserId).snapshots(),
@@ -480,7 +480,7 @@ class _HomePageState extends State<HomePage> {
                 receiverEmail: userData['email'] ?? '',
                 receiverID: userData['uid'] ?? '',
                 receiverDisplayName:
-                    userData['displayName'] ?? userData['email'] ?? '',
+                userData['displayName'] ?? userData['email'] ?? '',
                 isGroup: false,
               ),
             ),
@@ -490,20 +490,20 @@ class _HomePageState extends State<HomePage> {
               CircleAvatar(
                 radius: 28,
                 backgroundColor:
-                    Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                Theme.of(context).colorScheme.primary.withOpacity(0.1),
                 backgroundImage: (userData['profilePhotoUrl'] != null &&
-                        userData['profilePhotoUrl'].toString().isNotEmpty)
+                    userData['profilePhotoUrl'].toString().isNotEmpty)
                     ? NetworkImage(userData['profilePhotoUrl'])
                     : null,
                 child: (userData['profilePhotoUrl'] == null ||
-                        userData['profilePhotoUrl'].toString().isEmpty)
+                    userData['profilePhotoUrl'].toString().isEmpty)
                     ? Text(
-                        initial,
-                        style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20),
-                      )
+                  initial,
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20),
+                )
                     : null,
               ),
               if (isOnline)
