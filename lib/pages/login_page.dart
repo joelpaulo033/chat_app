@@ -41,7 +41,7 @@ class _LoginPageState extends State<LoginPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: Colors.black,
         ),
       );
     }
@@ -55,7 +55,7 @@ class _LoginPageState extends State<LoginPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Please enter your email first"),
-          backgroundColor: Colors.orange,
+          backgroundColor: Colors.black,
         ),
       );
       return;
@@ -210,9 +210,9 @@ class _LoginPageState extends State<LoginPage> {
                           child: const Text(
                             "Forgot Password?",
                             style: TextStyle(
-                              color: Colors.white,
+                              color: Colors.black,
                               fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                              fontSize: 18,
                             ),
                           ),
                         ),
@@ -244,7 +244,7 @@ class _LoginPageState extends State<LoginPage> {
                             'Register now',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: Colors.black,
                               decoration: TextDecoration.underline,
                               fontSize: 15,
                             ),
