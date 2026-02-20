@@ -4,6 +4,7 @@ import 'package:chat_app/services/auth/auth_service.dart';
 import 'package:chat_app/services/chat/chat_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 class ChatPage extends StatefulWidget {
@@ -76,9 +77,9 @@ class _ChatPageState extends State<ChatPage> {
                   color: isFavorite
                       ? Colors.orange
                       : Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.6),
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.6),
                 ),
                 onPressed: () => _chatService.toggleFavorite(widget.receiverID),
               );
@@ -135,16 +136,16 @@ class _ChatPageState extends State<ChatPage> {
             CircleAvatar(
               radius: 18,
               backgroundColor: (profilePhotoUrl == null ||
-                      profilePhotoUrl.isEmpty)
+                  profilePhotoUrl.isEmpty)
                   ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
                   : null,
               backgroundImage:
-                  (profilePhotoUrl != null && profilePhotoUrl.isNotEmpty)
-                      ? NetworkImage(profilePhotoUrl)
-                      : null,
+              (profilePhotoUrl != null && profilePhotoUrl.isNotEmpty)
+                  ? NetworkImage(profilePhotoUrl)
+                  : null,
               child: (profilePhotoUrl == null || profilePhotoUrl.isEmpty)
                   ? Icon(Icons.person,
-                      color: Theme.of(context).colorScheme.primary, size: 20)
+                  color: Theme.of(context).colorScheme.primary, size: 20)
                   : null,
             ),
             const SizedBox(width: 12),
@@ -178,9 +179,9 @@ class _ChatPageState extends State<ChatPage> {
                         color: isOnline
                             ? Colors.green
                             : Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.5),
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.5),
                       ),
                     ),
                   ],
@@ -199,7 +200,7 @@ class _ChatPageState extends State<ChatPage> {
         CircleAvatar(
           radius: 18,
           backgroundColor:
-              Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+          Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
           child: Icon(Icons.group_rounded,
               color: Theme.of(context).colorScheme.primary, size: 20),
         ),
@@ -296,17 +297,20 @@ class _ChatPageState extends State<ChatPage> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Column(
         crossAxisAlignment:
-            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment:
-                isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
             children: [
-              ChatBubble(
-                message: data['message'],
-                isCurrentUser: isMe,
-                isForwarded: isForwarded,
-                onLongPress: () => _onMessageLongPress(doc.id, data['message']),
+              Flexible(
+                child: ChatBubble(
+                  message: data['message'],
+                  isCurrentUser: isMe,
+                  isForwarded: isForwarded,
+                  onLongPress: () =>
+                      _onMessageLongPress(doc.id, data['message']),
+                ),
               ),
             ],
           ),
@@ -332,6 +336,17 @@ class _ChatPageState extends State<ChatPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: 12),
+          ListTile(
+            leading: const Icon(Icons.copy_rounded, color: Colors.green),
+            title: const Text('Copy Message'),
+            onTap: () async {
+              Navigator.pop(context);
+              await Clipboard.setData(ClipboardData(text: messageContent));
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Message copied to clipboard")));
+            },
+          ),
           ListTile(
             leading: const Icon(Icons.forward_rounded, color: Colors.blue),
             title: const Text('Forward Message'),
@@ -380,13 +395,13 @@ class _ChatPageState extends State<ChatPage> {
                   return ListTile(
                     leading: CircleAvatar(
                       backgroundImage: (userData['profilePhotoUrl'] != null &&
-                              userData['profilePhotoUrl'].toString().isNotEmpty)
+                          userData['profilePhotoUrl'].toString().isNotEmpty)
                           ? NetworkImage(userData['profilePhotoUrl'])
                           : null,
                       child: (userData['profilePhotoUrl'] == null ||
-                              userData['profilePhotoUrl'].toString().isEmpty)
+                          userData['profilePhotoUrl'].toString().isEmpty)
                           ? Text(
-                              userData['displayName']?[0].toUpperCase() ?? '?')
+                          userData['displayName']?[0].toUpperCase() ?? '?')
                           : null,
                     ),
                     title: Text(userData['displayName'] ?? userData['email']),

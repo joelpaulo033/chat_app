@@ -56,6 +56,7 @@ GitHub: https://github.com/joelpaulo033
 
 ---
 *Developed by Group 5.*
+<<<<<<< HEAD
 
 SCREENSHOTS
 
@@ -74,3 +75,14 @@ SCREENSHOTS
 /home/mr-freddie/Downloads/WhatsApp Image 2026-02-20 at 12.13.21 PM.jpeg
 /home/mr-freddie/Downloads/WhatsApp Image 2026-02-20 at 12.13.19 PM.jpeg
 /home/mr-freddie/Downloads/WhatsApp Image 2026-02-20 at 12.13.17 PM.jpeg
+=======
+name and registration of group 5 members
+1.joel J. paulo NIT/BCS/2023/497
+2.wilfred E.michael NIT/BCS/2022/415
+3.jekonia C. mbughi NIT/BCS/2023/486
+4.benson L. mgonya NIT/BCS/2023/508
+5.yusuph B. marik NIT/BCS/2023/601
+6.fadhili S. Idi NIT/BCS/2023/549
+7.silas E magori  NIT/BCS/2023/602
+8.Amos z msuya  NIT/BCS/2023/489
+>>>>>>> c0d54b6a6d6629d8664ddbce0b0cf7402a17e139

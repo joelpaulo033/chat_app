@@ -1,52 +1,91 @@
 import 'package:flutter/material.dart';
 
-class MyButton extends StatelessWidget {
+class MyButton extends StatefulWidget {
   final void Function()? onTap;
   final String text;
 
   const MyButton({super.key, required this.onTap, required this.text});
 
   @override
+  State<MyButton> createState() => _MyButtonState();
+}
+
+class _MyButtonState extends State<MyButton> with SingleTickerProviderStateMixin {
+  bool _isPressed = false;
+  late AnimationController _controller;
+  late Animation<double> _glowAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _glowAnimation = Tween<double>(begin: 0, end: 8).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+  }
+
+  void _onTapDown(TapDownDetails details) {
+    setState(() => _isPressed = true);
+    _controller.forward();
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    setState(() => _isPressed = false);
+    _controller.reverse();
+    if (widget.onTap != null) widget.onTap!();
+  }
+
+  void _onTapCancel() {
+    setState(() => _isPressed = false);
+    _controller.reverse();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 25.0),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Ink(
+    return GestureDetector(
+      onTapDown: _onTapDown,
+      onTapUp: _onTapUp,
+      onTapCancel: _onTapCancel,
+      child: AnimatedBuilder(
+        animation: _glowAnimation,
+        builder: (context, child) {
+          return Container(
+            width: 150,
+            height: 45,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 colors: [Color(0xFFFF4500), Color(0xFFFF8C00)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFFF4500).withValues(alpha: 0.35),
-                  blurRadius: 15,
-                  offset: const Offset(0, 8),
+                  color: Colors.orange.withOpacity(0.7),
+                  blurRadius: _glowAnimation.value,
+                  spreadRadius: _glowAnimation.value / 2,
                 ),
               ],
             ),
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              child: Center(
-                child: Text(
-                  text,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                    color: Colors.white,
-                    letterSpacing: 1,
-                  ),
+            child: Center(
+              child: Text(
+                widget.text,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
