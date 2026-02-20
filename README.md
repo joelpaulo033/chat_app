@@ -56,3 +56,21 @@ GitHub: https://github.com/joelpaulo033
 
 ---
 *Developed by Group 5.*
+
+SCREENSHOTS
+
+
+/home/mr-freddie/Downloads/WhatsApp Image 2026-02-20 at 12.13.36 PM(1).jpeg
+/home/mr-freddie/Downloads/WhatsApp Image 2026-02-20 at 12.13.36 PM.jpeg
+/home/mr-freddie/Downloads/WhatsApp Image 2026-02-20 at 12.13.35 PM(3).jpeg
+/home/mr-freddie/Downloads/WhatsApp Image 2026-02-20 at 12.13.35 PM(2).jpeg
+/home/mr-freddie/Downloads/WhatsApp Image 2026-02-20 at 12.13.35 PM(1).jpeg
+/home/mr-freddie/Downloads/WhatsApp Image 2026-02-20 at 12.13.35 PM.jpeg
+/home/mr-freddie/Downloads/WhatsApp Image 2026-02-20 at 12.13.34 PM.jpeg
+/home/mr-freddie/Downloads/WhatsApp Image 2026-02-20 at 12.13.27 PM.jpeg
+/home/mr-freddie/Downloads/WhatsApp Image 2026-02-20 at 12.13.24 PM.jpeg
+/home/mr-freddie/Downloads/WhatsApp Image 2026-02-20 at 12.13.23 PM.jpeg
+/home/mr-freddie/Downloads/WhatsApp Image 2026-02-20 at 12.13.21 PM(1).jpeg
+/home/mr-freddie/Downloads/WhatsApp Image 2026-02-20 at 12.13.21 PM.jpeg
+/home/mr-freddie/Downloads/WhatsApp Image 2026-02-20 at 12.13.19 PM.jpeg
+/home/mr-freddie/Downloads/WhatsApp Image 2026-02-20 at 12.13.17 PM.jpeg
